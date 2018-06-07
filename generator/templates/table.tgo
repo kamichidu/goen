@@ -1,0 +1,443 @@
+{{ $sqlizerType := printf "%sSqlizer" $.Entity }}
+{{ $sqlizerImpl := printf "_%sSqlizer" $.Entity }}
+{{ $queryType := printf "%sQueryBuilder" $.Entity }}
+{{ $columnType := printf "%sColumnExpr" $.Entity }}
+{{ $orderType := printf "%sOrderExpr" $.Entity }}
+
+func init() {
+    metaSchema.Register({{ $.Entity }}{})
+}
+
+type {{ $sqlizerType }} interface {
+    {{ $.Entity }}ToSql() (string, []interface{}, error)
+}
+
+type {{ $sqlizerImpl }} struct {
+    squirrel.Sqlizer
+}
+
+func (sqlizer *{{ $sqlizerImpl }}) {{ $.Entity }}ToSql() (string, []interface{}, error) {
+    return sqlizer.ToSql()
+}
+
+type {{ $columnType }} interface {
+    {{ $.Entity }}ColumnExpr() string
+}
+
+type {{ $orderType }} interface {
+    {{ $.Entity }}OrderExpr() string
+}
+
+type {{ $queryType }} struct {
+    dbc *goen.DBContext
+
+    includeLoaders goen.IncludeLoaderList
+
+    builder squirrel.SelectBuilder
+}
+
+func new{{ $queryType }}(dbc *goen.DBContext, cols []string) {{ $queryType }} {
+    stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
+    return {{ $queryType }}{
+        dbc: dbc,
+        builder: stmtBuilder.Select(cols...).From("{{ $.TableName }}"),
+    }
+}
+
+func (qb {{ $queryType }}) Include(loaders ...goen.IncludeLoader) {{ $queryType }} {
+    qb.includeLoaders.Append(loaders...)
+    return qb
+}
+
+func (qb {{ $queryType }}) Where(conds ...{{ $sqlizerType }}) {{ $queryType }} {
+    for _, cond := range conds {
+        qb.builder = qb.builder.Where(cond)
+    }
+    return qb
+}
+
+func (qb {{ $queryType }}) OrderBy(orderBys ...{{ $orderType }}) {{ $queryType }} {
+    exprs := make([]string, len(orderBys))
+    for i := range orderBys {
+        exprs[i] = orderBys[i].{{ $.Entity }}OrderExpr()
+    }
+    qb.builder = qb.builder.OrderBy(exprs...)
+    return qb
+}
+
+func (qb {{ $queryType }}) Query() ([]*{{ $.Entity }}, error) {
+    query, args, err := qb.builder.ToSql()
+    if err != nil {
+        return nil, err
+    }
+    rows, err := qb.dbc.Query(query, args...)
+    if err != nil {
+        return nil, err
+    }
+
+    var records []*{{ $.Entity }}
+    if err := qb.dbc.Scan(rows, &records); err != nil {
+        rows.Close()
+        return nil, err
+    }
+    rows.Close()
+
+    sc := goen.NewScopeCache(metaSchema)
+    for _, record := range records {
+        sc.AddObject(record)
+    }
+    if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+        return nil, err
+    }
+
+    return records, nil
+}
+
+{{ range $column := $.Columns }}
+
+{{ $typ := printf "_%s_%s" $.Entity $column.FieldName }}
+{{ $columnOrderType := printf "_%s_%s_OrderExpr" $.Entity $column.FieldName }}
+
+type {{ $columnOrderType }} string
+
+func (s {{ $columnOrderType }}) {{ $.Entity }}OrderExpr() string {
+    return string(s)
+}
+
+type {{ $typ }} string
+
+func (c {{ $typ }}) {{ $.Entity }}ColumnExpr() string {
+    return "{{ $column.ColumnName }}"
+}
+
+func (c {{ $typ }}) Eq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Eq{"{{ $column.ColumnName }}": v}}
+}
+
+func (c {{ $typ }}) NotEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{"{{ $column.ColumnName }}": v}}
+}
+
+func (c {{ $typ }}) In(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Eq{"{{ $column.ColumnName }}": v}}
+}
+
+func (c {{ $typ }}) NotIn(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{"{{ $column.ColumnName }}": v}}
+}
+
+{{ if eq $column.FieldType "string" }}
+func (c {{ $typ }}) Like(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Expr("{{ $column.ColumnName }} LIKE ?", v)}
+}
+
+func (c {{ $typ }}) NotLike(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Expr("{{ $column.ColumnName }} NOT LIKE ?", v)}
+}
+{{ end }}
+
+func (c {{ $typ }}) Asc() {{ $orderType }} {
+    return {{ $columnOrderType }}("{{ $column.ColumnName }}")
+}
+
+func (c {{ $typ }}) Desc() {{ $orderType }} {
+    return {{ $columnOrderType }}("{{ $column.ColumnName }} DESC")
+}
+
+{{ end }}
+
+{{ $dbsetType := printf "%sDBSet" $.Entity }}
+
+type {{ $dbsetType }} struct {
+    dbc *goen.DBContext
+
+    {{ range $column := $.Columns -}}
+    {{ $typ := printf "_%s_%s" $.Entity $column.FieldName }}
+    {{ $column.FieldName }} {{ $typ }}
+    {{ end }}
+
+    {{ range $rel := $.OneToManyRelations }}
+    Include{{ $rel.FieldName }} goen.IncludeLoader
+    {{ end }}
+    {{ range $rel := $.ManyToOneRelations }}
+    Include{{ $rel.FieldName }} goen.IncludeLoader
+    {{ end }}
+    {{ range $rel := $.OneToOneRelations }}
+    Include{{ $rel.FieldName }} goen.IncludeLoader
+    {{ end }}
+}
+
+func new{{ $dbsetType }}(dbc *goen.DBContext) *{{ $dbsetType }} {
+    dbset := &{{ $dbsetType }}{
+        dbc: dbc,
+    }
+    {{ range $column := $.Columns -}}
+    dbset.{{ $column.FieldName }} = "{{ $column.ColumnName }}"
+    {{ end }}
+    {{ range $rel := $.OneToManyRelations }}
+    dbset.Include{{ $rel.FieldName }} = goen.IncludeLoaderFunc(dbset.include{{ $rel.FieldName }})
+    {{ end }}
+    {{ range $rel := $.ManyToOneRelations }}
+    dbset.Include{{ $rel.FieldName }} = goen.IncludeLoaderFunc(dbset.include{{ $rel.FieldName }})
+    {{ end }}
+    {{ range $rel := $.OneToOneRelations }}
+    dbset.Include{{ $rel.FieldName }} = goen.IncludeLoaderFunc(dbset.include{{ $rel.FieldName }})
+    {{ end }}
+    return dbset
+}
+
+{{ if not $.ReadOnly }}
+func (dbset *{{ $dbsetType }}) Insert(v *{{ $.Entity }}) {
+    cols := make([]string, 0, {{ len $.Columns }})
+    vals := make([]interface{}, 0, {{ len $.Columns }})
+
+    {{ range $column := $.Columns -}}
+    {{ if $column.OmitEmpty -}}
+    if !dbset.isZero(v.{{ $column.FieldName }}) {
+        cols = append(cols, "{{ $column.ColumnName }}")
+        vals = append(vals, v.{{ $column.FieldName }})
+    }
+    {{ else }}
+    cols = append(cols, "{{ $column.ColumnName }}")
+    vals = append(vals, v.{{ $column.FieldName }})
+    {{ end -}}
+    {{ end }}
+
+    dbset.dbc.Patch(&goen.Patch{
+        Kind: goen.PatchInsert,
+        TableName: "{{ $.TableName }}",
+        Columns: cols,
+        Values: vals,
+    })
+}
+{{ end }}
+
+func (dbset *{{ $dbsetType }}) Select() {{ $queryType }} {
+    // for caching reason, wont support filtering columns
+    return new{{ $queryType }}(dbset.dbc, []string{
+        {{ range $column := $.Columns -}}
+        "{{ $column.ColumnName }}",
+        {{ end -}}
+    })
+}
+
+{{ if not $.ReadOnly }}
+func (dbset *{{ $dbsetType }}) Update(v *{{ $.Entity }}) {
+    cols := []string{
+        {{ range $column := $.Columns -}}
+        {{ if not $column.IsPK -}}
+        "{{ $column.ColumnName }}",
+        {{ end -}}
+        {{ end -}}
+    }
+    vals := []interface{}{
+        {{ range $column := $.Columns -}}
+        {{ if not $column.IsPK -}}
+        v.{{ $column.FieldName }},
+        {{ end -}}
+        {{ end -}}
+    }
+    dbset.dbc.Patch(&goen.Patch{
+        Kind: goen.PatchUpdate,
+        TableName: "{{ $.TableName }}",
+        RowKey: dbset.PrimaryKey(v),
+        Columns: cols,
+        Values: vals,
+    })
+}
+{{ end }}
+
+{{ if not $.ReadOnly }}
+func (dbset *{{ $dbsetType }}) Delete(v *{{ $.Entity }}) {
+    dbset.dbc.Patch(&goen.Patch{
+        Kind: goen.PatchDelete,
+        TableName: "{{ $.TableName }}",
+        RowKey: dbset.PrimaryKey(v),
+    })
+}
+{{ end }}
+
+func (dbset *{{ $dbsetType }}) PrimaryKey(v *{{ $.Entity }}) goen.RowKey {
+    return &goen.MapRowKey{
+        Table: "{{ $.TableName }}",
+        Key: map[string]interface{}{
+            {{ range $column := $.Columns -}}
+            {{ if $column.IsPK -}}
+            "{{ $column.ColumnName }}": v.{{ $column.FieldName }},
+            {{ end -}}
+            {{ end -}}
+        },
+    }
+}
+
+func (dbset *{{ $dbsetType }}) isZero(v interface{}) bool {
+    rv := reflect.ValueOf(v)
+    zero := reflect.Zero(rv.Type())
+    return reflect.DeepEqual(rv.Interface(), zero.Interface())
+}
+
+{{/* one-to-many relations begin */}}
+{{ range $rel := $.OneToManyRelations }}
+
+func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc *goen.ScopeCache, records interface{}) error {
+    entities, ok := records.([]*{{ $.Entity }})
+    if !ok {
+        return nil
+    }
+
+    childRowKeyOf := func(v *{{ $.Entity }}) goen.RowKey {
+        return &goen.MapRowKey{
+            Table: "{{ $rel.TableName }}",
+            Key: map[string]interface{}{
+                {{ range $i, $fk := $rel.ForeignKeys -}}
+                {{ $refe := index $rel.References $i -}}
+                "{{ $refe.ColumnName }}": v.{{ $fk.FieldName }},
+                {{ end -}}
+            },
+        }
+    }
+
+    // filter cached entity
+    cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+    noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+    for _, entity := range entities {
+        key := childRowKeyOf(entity)
+        if sc.HasObject(key) {
+            cachedChildRowKeys = append(cachedChildRowKeys, key)
+        } else {
+            noCachedChildRowKeys = append(noCachedChildRowKeys, key)
+        }
+    }
+    if len(noCachedChildRowKeys) > 0 {
+        cond := squirrel.Or{}
+        for _, rowKey := range noCachedChildRowKeys {
+            cond = append(cond, rowKey)
+        }
+        query, args, err := squirrel.Select(
+            {{ range $name := $rel.ColumnNames -}}
+            "{{ $name }}",
+            {{ end -}}
+            ).From("{{ $rel.TableName }}").Where(cond).ToSql()
+        if err != nil {
+            return err
+        }
+        rows, err := dbset.dbc.Query(query, args...)
+        if err != nil {
+            return err
+        }
+
+        var noCachedEntities []*{{ $rel.FieldType }}
+        if err := dbset.dbc.Scan(rows, &noCachedEntities); err != nil {
+            rows.Close()
+            return err
+        }
+        rows.Close()
+
+        for _, entity := range noCachedEntities {
+            sc.AddObject(entity)
+        }
+
+        // for newly loaded entity, to be filled by includeLoader
+        later.PushBack(noCachedEntities)
+    }
+
+    for _, entity := range entities {
+        childRowKey := childRowKeyOf(entity)
+        raw := sc.GetObject(childRowKey)
+        if refes, ok := raw.([]interface{}); ok {
+            for _, refe := range refes {
+                entity.{{ $rel.FieldName }} = append(entity.{{ $rel.FieldName }}, refe.(*{{ $rel.FieldType }}))
+            }
+        } else if raw != nil {
+            entity.{{ $rel.FieldName }} = []*{{ $rel.FieldType }}{raw.(*{{ $rel.FieldType }})}
+        }
+    }
+
+    return nil
+}
+
+{{ end }}
+{{/* one-to-many relations end */}}
+
+{{/* many-to-one relations begin */}}
+{{ range $rel := $.ManyToOneRelations }}
+
+func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc *goen.ScopeCache, records interface{}) error {
+    entities, ok := records.([]*{{ $.Entity }})
+    if !ok {
+        return nil
+    }
+
+    childRowKeyOf := func(v *{{ $.Entity }}) goen.RowKey {
+        return &goen.MapRowKey{
+            Table: "{{ $rel.TableName }}",
+            Key: map[string]interface{}{
+                {{ range $i, $fk := $rel.ForeignKeys -}}
+                {{ $refe := index $rel.References $i -}}
+                "{{ $refe.ColumnName }}": v.{{ $fk.FieldName }},
+                {{ end -}}
+            },
+        }
+    }
+
+    // filter cached entity
+    cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+    noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+    for _, entity := range entities {
+        key := childRowKeyOf(entity)
+        if sc.HasObject(key) {
+            cachedChildRowKeys = append(cachedChildRowKeys, key)
+        } else {
+            noCachedChildRowKeys = append(noCachedChildRowKeys, key)
+        }
+    }
+    if len(noCachedChildRowKeys) > 0 {
+        cond := squirrel.Or{}
+        for _, rowKey := range noCachedChildRowKeys {
+            cond = append(cond, rowKey)
+        }
+        query, args, err := squirrel.Select(
+            {{ range $name := $rel.ColumnNames -}}
+            "{{ $name }}",
+            {{ end -}}
+            ).From("{{ $rel.TableName }}").Where(cond).ToSql()
+        if err != nil {
+            return err
+        }
+        rows, err := dbset.dbc.Query(query, args...)
+        if err != nil {
+            return err
+        }
+
+        var noCachedEntities []*{{ $rel.FieldType }}
+        if err := dbset.dbc.Scan(rows, &noCachedEntities); err != nil {
+            rows.Close()
+            return err
+        }
+        rows.Close()
+
+        for _, entity := range noCachedEntities {
+            sc.AddObject(entity)
+        }
+
+        // for newly loaded entity, to be filled by includeLoader
+        later.PushBack(noCachedEntities)
+    }
+
+    for _, entity := range entities {
+        childRowKey := childRowKeyOf(entity)
+        raw := sc.GetObject(childRowKey)
+        entity.{{ $rel.FieldName }} = raw.(*{{ $rel.FieldType }})
+    }
+
+    return nil
+}
+
+{{ end }}
+{{/* many-to-one relations end */}}
+
+{{/* one-to-one relations begin */}}
+{{ range $rel := $.OneToOneRelations }}
+
+{{ end }}
+{{/* one-to-one relations end */}}

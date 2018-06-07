@@ -1,0 +1,19 @@
+type DBContext struct {
+    *goen.DBContext
+
+    {{ range $table := $.Tables }}
+    {{ $dbsetType := printf "%sDBSet" $table.Entity }}
+    {{ $table.Entity }} *{{ $dbsetType }}
+    {{ end }}
+}
+
+func NewDBContext(dialectName string, db *sql.DB) *DBContext {
+    dbc := goen.NewDBContext(dialectName, db)
+    return &DBContext{
+        DBContext: dbc,
+        {{ range $table := $.Tables -}}
+        {{ $dbsetType := printf "%sDBSet" $table.Entity -}}
+        {{ $table.Entity }}: new{{ $dbsetType }}(dbc),
+        {{ end -}}
+    }
+}
