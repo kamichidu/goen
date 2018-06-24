@@ -5,976 +5,837 @@
 package example
 
 import (
-     "container/list"
-     "database/sql"
-     "reflect"
-     "gopkg.in/Masterminds/squirrel.v1"
-     "github.com/kamichidu/goen"
-     "github.com/satori/go.uuid"
-    )
+	"container/list"
+	"database/sql"
+	"reflect"
+
+	"github.com/kamichidu/goen"
+	"github.com/satori/go.uuid"
+	"gopkg.in/Masterminds/squirrel.v1"
+)
 
 var metaSchema = new(goen.MetaSchema)
 
-
-
-
-
-
-
-
 func init() {
-    metaSchema.Register(Blog{})
+	metaSchema.Register(Blog{})
 }
 
 type BlogSqlizer interface {
-    BlogToSql() (string, []interface{}, error)
+	BlogToSql() (string, []interface{}, error)
 }
 
 type _BlogSqlizer struct {
-    squirrel.Sqlizer
+	squirrel.Sqlizer
 }
 
 func (sqlizer *_BlogSqlizer) BlogToSql() (string, []interface{}, error) {
-    return sqlizer.ToSql()
+	return sqlizer.ToSql()
 }
 
 type BlogColumnExpr interface {
-    BlogColumnExpr() string
+	BlogColumnExpr() string
 }
 
 type BlogOrderExpr interface {
-    BlogOrderExpr() string
+	BlogOrderExpr() string
 }
 
 type BlogQueryBuilder struct {
-    dbc *goen.DBContext
+	dbc *goen.DBContext
 
-    includeLoaders goen.IncludeLoaderList
+	includeLoaders goen.IncludeLoaderList
 
-    builder squirrel.SelectBuilder
+	builder squirrel.SelectBuilder
 }
 
 func newBlogQueryBuilder(dbc *goen.DBContext, cols []string) BlogQueryBuilder {
-    stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
-    return BlogQueryBuilder{
-        dbc: dbc,
-        builder: stmtBuilder.Select(cols...).From("blogs"),
-    }
+	stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
+	return BlogQueryBuilder{
+		dbc:     dbc,
+		builder: stmtBuilder.Select(cols...).From("blogs"),
+	}
 }
 
 func (qb BlogQueryBuilder) Include(loaders ...goen.IncludeLoader) BlogQueryBuilder {
-    qb.includeLoaders.Append(loaders...)
-    return qb
+	qb.includeLoaders.Append(loaders...)
+	return qb
 }
 
 func (qb BlogQueryBuilder) Where(conds ...BlogSqlizer) BlogQueryBuilder {
-    for _, cond := range conds {
-        qb.builder = qb.builder.Where(cond)
-    }
-    return qb
+	for _, cond := range conds {
+		qb.builder = qb.builder.Where(cond)
+	}
+	return qb
 }
 
 func (qb BlogQueryBuilder) OrderBy(orderBys ...BlogOrderExpr) BlogQueryBuilder {
-    exprs := make([]string, len(orderBys))
-    for i := range orderBys {
-        exprs[i] = orderBys[i].BlogOrderExpr()
-    }
-    qb.builder = qb.builder.OrderBy(exprs...)
-    return qb
+	exprs := make([]string, len(orderBys))
+	for i := range orderBys {
+		exprs[i] = orderBys[i].BlogOrderExpr()
+	}
+	qb.builder = qb.builder.OrderBy(exprs...)
+	return qb
 }
 
 func (qb BlogQueryBuilder) Query() ([]*Blog, error) {
-    query, args, err := qb.builder.ToSql()
-    if err != nil {
-        return nil, err
-    }
-    rows, err := qb.dbc.Query(query, args...)
-    if err != nil {
-        return nil, err
-    }
+	query, args, err := qb.builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := qb.dbc.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
 
-    var records []*Blog
-    if err := qb.dbc.Scan(rows, &records); err != nil {
-        rows.Close()
-        return nil, err
-    }
-    rows.Close()
+	var records []*Blog
+	if err := qb.dbc.Scan(rows, &records); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
 
-    sc := goen.NewScopeCache(metaSchema)
-    for _, record := range records {
-        sc.AddObject(record)
-    }
-    if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
-        return nil, err
-    }
+	sc := goen.NewScopeCache(metaSchema)
+	for _, record := range records {
+		sc.AddObject(record)
+	}
+	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+		return nil, err
+	}
 
-    return records, nil
+	return records, nil
 }
-
-
-
-
-
 
 type _Blog_BlogID_OrderExpr string
 
 func (s _Blog_BlogID_OrderExpr) BlogOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Blog_BlogID string
 
 func (c _Blog_BlogID) BlogColumnExpr() string {
-    return "blog_id"
+	return "blog_id"
 }
 
 func (c _Blog_BlogID) Eq(v uuid.UUID) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.Eq{"blog_id": v}}
 }
 
 func (c _Blog_BlogID) NotEq(v uuid.UUID) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.NotEq{"blog_id": v}}
 }
 
 func (c _Blog_BlogID) In(v []uuid.UUID) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.Eq{"blog_id": v}}
 }
 
 func (c _Blog_BlogID) NotIn(v []uuid.UUID) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.NotEq{"blog_id": v}}
 }
 
-
-
 func (c _Blog_BlogID) Asc() BlogOrderExpr {
-    return _Blog_BlogID_OrderExpr("blog_id")
+	return _Blog_BlogID_OrderExpr("blog_id")
 }
 
 func (c _Blog_BlogID) Desc() BlogOrderExpr {
-    return _Blog_BlogID_OrderExpr("blog_id DESC")
+	return _Blog_BlogID_OrderExpr("blog_id DESC")
 }
-
-
-
-
-
 
 type _Blog_Name_OrderExpr string
 
 func (s _Blog_Name_OrderExpr) BlogOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Blog_Name string
 
 func (c _Blog_Name) BlogColumnExpr() string {
-    return "name"
+	return "name"
 }
 
 func (c _Blog_Name) Eq(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Eq{"name": v}}
+	return &_BlogSqlizer{squirrel.Eq{"name": v}}
 }
 
 func (c _Blog_Name) NotEq(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.NotEq{"name": v}}
+	return &_BlogSqlizer{squirrel.NotEq{"name": v}}
 }
 
 func (c _Blog_Name) In(v []string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Eq{"name": v}}
+	return &_BlogSqlizer{squirrel.Eq{"name": v}}
 }
 
 func (c _Blog_Name) NotIn(v []string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.NotEq{"name": v}}
+	return &_BlogSqlizer{squirrel.NotEq{"name": v}}
 }
 
-
 func (c _Blog_Name) Like(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Expr("name LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr("name LIKE ?", v)}
 }
 
 func (c _Blog_Name) NotLike(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Expr("name NOT LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr("name NOT LIKE ?", v)}
 }
 
-
 func (c _Blog_Name) Asc() BlogOrderExpr {
-    return _Blog_Name_OrderExpr("name")
+	return _Blog_Name_OrderExpr("name")
 }
 
 func (c _Blog_Name) Desc() BlogOrderExpr {
-    return _Blog_Name_OrderExpr("name DESC")
+	return _Blog_Name_OrderExpr("name DESC")
 }
-
-
-
-
-
 
 type _Blog_Author_OrderExpr string
 
 func (s _Blog_Author_OrderExpr) BlogOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Blog_Author string
 
 func (c _Blog_Author) BlogColumnExpr() string {
-    return "author"
+	return "author"
 }
 
 func (c _Blog_Author) Eq(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Eq{"author": v}}
+	return &_BlogSqlizer{squirrel.Eq{"author": v}}
 }
 
 func (c _Blog_Author) NotEq(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.NotEq{"author": v}}
+	return &_BlogSqlizer{squirrel.NotEq{"author": v}}
 }
 
 func (c _Blog_Author) In(v []string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Eq{"author": v}}
+	return &_BlogSqlizer{squirrel.Eq{"author": v}}
 }
 
 func (c _Blog_Author) NotIn(v []string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.NotEq{"author": v}}
+	return &_BlogSqlizer{squirrel.NotEq{"author": v}}
 }
 
-
 func (c _Blog_Author) Like(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Expr("author LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr("author LIKE ?", v)}
 }
 
 func (c _Blog_Author) NotLike(v string) BlogSqlizer {
-    return &_BlogSqlizer{squirrel.Expr("author NOT LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr("author NOT LIKE ?", v)}
 }
 
-
 func (c _Blog_Author) Asc() BlogOrderExpr {
-    return _Blog_Author_OrderExpr("author")
+	return _Blog_Author_OrderExpr("author")
 }
 
 func (c _Blog_Author) Desc() BlogOrderExpr {
-    return _Blog_Author_OrderExpr("author DESC")
+	return _Blog_Author_OrderExpr("author DESC")
 }
 
-
-
-
-
 type BlogDBSet struct {
-    dbc *goen.DBContext
+	dbc *goen.DBContext
 
-    
-    BlogID _Blog_BlogID
-    
-    Name _Blog_Name
-    
-    Author _Blog_Author
-    
+	BlogID _Blog_BlogID
 
-    
-    IncludePosts goen.IncludeLoader
-    
-    
-    
+	Name _Blog_Name
+
+	Author _Blog_Author
+
+	IncludePosts goen.IncludeLoader
 }
 
 func newBlogDBSet(dbc *goen.DBContext) *BlogDBSet {
-    dbset := &BlogDBSet{
-        dbc: dbc,
-    }
-    dbset.BlogID = "blog_id"
-    dbset.Name = "name"
-    dbset.Author = "author"
-    
-    
-    dbset.IncludePosts = goen.IncludeLoaderFunc(dbset.includePosts)
-    
-    
-    
-    return dbset
-}
+	dbset := &BlogDBSet{
+		dbc: dbc,
+	}
+	dbset.BlogID = "blog_id"
+	dbset.Name = "name"
+	dbset.Author = "author"
 
+	dbset.IncludePosts = goen.IncludeLoaderFunc(dbset.includePosts)
+
+	return dbset
+}
 
 func (dbset *BlogDBSet) Insert(v *Blog) {
-    cols := make([]string, 0, 3)
-    vals := make([]interface{}, 0, 3)
+	cols := make([]string, 0, 3)
+	vals := make([]interface{}, 0, 3)
 
-    
-    cols = append(cols, "blog_id")
-    vals = append(vals, v.BlogID)
-    
-    cols = append(cols, "name")
-    vals = append(vals, v.Name)
-    
-    cols = append(cols, "author")
-    vals = append(vals, v.Author)
-    
+	cols = append(cols, "blog_id")
+	vals = append(vals, v.BlogID)
 
-    dbset.dbc.Patch(&goen.Patch{
-        Kind: goen.PatchInsert,
-        TableName: "blogs",
-        Columns: cols,
-        Values: vals,
-    })
+	cols = append(cols, "name")
+	vals = append(vals, v.Name)
+
+	cols = append(cols, "author")
+	vals = append(vals, v.Author)
+
+	dbset.dbc.Patch(&goen.Patch{
+		Kind:      goen.PatchInsert,
+		TableName: "blogs",
+		Columns:   cols,
+		Values:    vals,
+	})
 }
-
 
 func (dbset *BlogDBSet) Select() BlogQueryBuilder {
-    // for caching reason, wont support filtering columns
-    return newBlogQueryBuilder(dbset.dbc, []string{
-        "blog_id",
-        "name",
-        "author",
-        })
+	// for caching reason, wont support filtering columns
+	return newBlogQueryBuilder(dbset.dbc, []string{
+		"blog_id",
+		"name",
+		"author",
+	})
 }
-
 
 func (dbset *BlogDBSet) Update(v *Blog) {
-    cols := []string{
-        "name",
-        "author",
-        }
-    vals := []interface{}{
-        v.Name,
-        v.Author,
-        }
-    dbset.dbc.Patch(&goen.Patch{
-        Kind: goen.PatchUpdate,
-        TableName: "blogs",
-        RowKey: dbset.PrimaryKey(v),
-        Columns: cols,
-        Values: vals,
-    })
+	cols := []string{
+		"name",
+		"author",
+	}
+	vals := []interface{}{
+		v.Name,
+		v.Author,
+	}
+	dbset.dbc.Patch(&goen.Patch{
+		Kind:      goen.PatchUpdate,
+		TableName: "blogs",
+		RowKey:    dbset.PrimaryKey(v),
+		Columns:   cols,
+		Values:    vals,
+	})
 }
-
-
 
 func (dbset *BlogDBSet) Delete(v *Blog) {
-    dbset.dbc.Patch(&goen.Patch{
-        Kind: goen.PatchDelete,
-        TableName: "blogs",
-        RowKey: dbset.PrimaryKey(v),
-    })
+	dbset.dbc.Patch(&goen.Patch{
+		Kind:      goen.PatchDelete,
+		TableName: "blogs",
+		RowKey:    dbset.PrimaryKey(v),
+	})
 }
 
-
 func (dbset *BlogDBSet) PrimaryKey(v *Blog) goen.RowKey {
-    return &goen.MapRowKey{
-        Table: "blogs",
-        Key: map[string]interface{}{
-            "blog_id": v.BlogID,
-            },
-    }
+	return &goen.MapRowKey{
+		Table: "blogs",
+		Key: map[string]interface{}{
+			"blog_id": v.BlogID,
+		},
+	}
 }
 
 func (dbset *BlogDBSet) isZero(v interface{}) bool {
-    rv := reflect.ValueOf(v)
-    zero := reflect.Zero(rv.Type())
-    return reflect.DeepEqual(rv.Interface(), zero.Interface())
+	rv := reflect.ValueOf(v)
+	zero := reflect.Zero(rv.Type())
+	return reflect.DeepEqual(rv.Interface(), zero.Interface())
 }
-
-
-
 
 func (dbset *BlogDBSet) includePosts(later *list.List, sc *goen.ScopeCache, records interface{}) error {
-    entities, ok := records.([]*Blog)
-    if !ok {
-        return nil
-    }
+	entities, ok := records.([]*Blog)
+	if !ok {
+		return nil
+	}
 
-    childRowKeyOf := func(v *Blog) goen.RowKey {
-        return &goen.MapRowKey{
-            Table: "posts",
-            Key: map[string]interface{}{
-                "blog_id": v.BlogID,
-                },
-        }
-    }
+	childRowKeyOf := func(v *Blog) goen.RowKey {
+		return &goen.MapRowKey{
+			Table: "posts",
+			Key: map[string]interface{}{
+				"blog_id": v.BlogID,
+			},
+		}
+	}
 
-    // filter cached entity
-    cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
-    noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
-    for _, entity := range entities {
-        key := childRowKeyOf(entity)
-        if sc.HasObject(key) {
-            cachedChildRowKeys = append(cachedChildRowKeys, key)
-        } else {
-            noCachedChildRowKeys = append(noCachedChildRowKeys, key)
-        }
-    }
-    if len(noCachedChildRowKeys) > 0 {
-        cond := squirrel.Or{}
-        for _, rowKey := range noCachedChildRowKeys {
-            cond = append(cond, rowKey)
-        }
-        query, args, err := squirrel.Select(
-            "blog_id",
-            "post_id",
-            "title",
-            "content",
-            ).From("posts").Where(cond).ToSql()
-        if err != nil {
-            return err
-        }
-        rows, err := dbset.dbc.Query(query, args...)
-        if err != nil {
-            return err
-        }
+	// filter cached entity
+	cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+	noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+	for _, entity := range entities {
+		key := childRowKeyOf(entity)
+		if sc.HasObject(key) {
+			cachedChildRowKeys = append(cachedChildRowKeys, key)
+		} else {
+			noCachedChildRowKeys = append(noCachedChildRowKeys, key)
+		}
+	}
+	if len(noCachedChildRowKeys) > 0 {
+		cond := squirrel.Or{}
+		for _, rowKey := range noCachedChildRowKeys {
+			cond = append(cond, rowKey)
+		}
+		query, args, err := squirrel.Select(
+			"blog_id",
+			"post_id",
+			"title",
+			"content",
+		).From("posts").Where(cond).ToSql()
+		if err != nil {
+			return err
+		}
+		rows, err := dbset.dbc.Query(query, args...)
+		if err != nil {
+			return err
+		}
 
-        var noCachedEntities []*Post
-        if err := dbset.dbc.Scan(rows, &noCachedEntities); err != nil {
-            rows.Close()
-            return err
-        }
-        rows.Close()
+		var noCachedEntities []*Post
+		if err := dbset.dbc.Scan(rows, &noCachedEntities); err != nil {
+			rows.Close()
+			return err
+		}
+		rows.Close()
 
-        for _, entity := range noCachedEntities {
-            sc.AddObject(entity)
-        }
+		for _, entity := range noCachedEntities {
+			sc.AddObject(entity)
+		}
 
-        // for newly loaded entity, to be filled by includeLoader
-        later.PushBack(noCachedEntities)
-    }
+		// for newly loaded entity, to be filled by includeLoader
+		later.PushBack(noCachedEntities)
+	}
 
-    for _, entity := range entities {
-        childRowKey := childRowKeyOf(entity)
-        raw := sc.GetObject(childRowKey)
-        if refes, ok := raw.([]interface{}); ok {
-            for _, refe := range refes {
-                entity.Posts = append(entity.Posts, refe.(*Post))
-            }
-        } else if raw != nil {
-            entity.Posts = []*Post{raw.(*Post)}
-        }
-    }
+	for _, entity := range entities {
+		childRowKey := childRowKeyOf(entity)
+		raw := sc.GetObject(childRowKey)
+		if refes, ok := raw.([]interface{}); ok {
+			for _, refe := range refes {
+				entity.Posts = append(entity.Posts, refe.(*Post))
+			}
+		} else if raw != nil {
+			entity.Posts = []*Post{raw.(*Post)}
+		}
+	}
 
-    return nil
+	return nil
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func init() {
-    metaSchema.Register(Post{})
+	metaSchema.Register(Post{})
 }
 
 type PostSqlizer interface {
-    PostToSql() (string, []interface{}, error)
+	PostToSql() (string, []interface{}, error)
 }
 
 type _PostSqlizer struct {
-    squirrel.Sqlizer
+	squirrel.Sqlizer
 }
 
 func (sqlizer *_PostSqlizer) PostToSql() (string, []interface{}, error) {
-    return sqlizer.ToSql()
+	return sqlizer.ToSql()
 }
 
 type PostColumnExpr interface {
-    PostColumnExpr() string
+	PostColumnExpr() string
 }
 
 type PostOrderExpr interface {
-    PostOrderExpr() string
+	PostOrderExpr() string
 }
 
 type PostQueryBuilder struct {
-    dbc *goen.DBContext
+	dbc *goen.DBContext
 
-    includeLoaders goen.IncludeLoaderList
+	includeLoaders goen.IncludeLoaderList
 
-    builder squirrel.SelectBuilder
+	builder squirrel.SelectBuilder
 }
 
 func newPostQueryBuilder(dbc *goen.DBContext, cols []string) PostQueryBuilder {
-    stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
-    return PostQueryBuilder{
-        dbc: dbc,
-        builder: stmtBuilder.Select(cols...).From("posts"),
-    }
+	stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
+	return PostQueryBuilder{
+		dbc:     dbc,
+		builder: stmtBuilder.Select(cols...).From("posts"),
+	}
 }
 
 func (qb PostQueryBuilder) Include(loaders ...goen.IncludeLoader) PostQueryBuilder {
-    qb.includeLoaders.Append(loaders...)
-    return qb
+	qb.includeLoaders.Append(loaders...)
+	return qb
 }
 
 func (qb PostQueryBuilder) Where(conds ...PostSqlizer) PostQueryBuilder {
-    for _, cond := range conds {
-        qb.builder = qb.builder.Where(cond)
-    }
-    return qb
+	for _, cond := range conds {
+		qb.builder = qb.builder.Where(cond)
+	}
+	return qb
 }
 
 func (qb PostQueryBuilder) OrderBy(orderBys ...PostOrderExpr) PostQueryBuilder {
-    exprs := make([]string, len(orderBys))
-    for i := range orderBys {
-        exprs[i] = orderBys[i].PostOrderExpr()
-    }
-    qb.builder = qb.builder.OrderBy(exprs...)
-    return qb
+	exprs := make([]string, len(orderBys))
+	for i := range orderBys {
+		exprs[i] = orderBys[i].PostOrderExpr()
+	}
+	qb.builder = qb.builder.OrderBy(exprs...)
+	return qb
 }
 
 func (qb PostQueryBuilder) Query() ([]*Post, error) {
-    query, args, err := qb.builder.ToSql()
-    if err != nil {
-        return nil, err
-    }
-    rows, err := qb.dbc.Query(query, args...)
-    if err != nil {
-        return nil, err
-    }
+	query, args, err := qb.builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := qb.dbc.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
 
-    var records []*Post
-    if err := qb.dbc.Scan(rows, &records); err != nil {
-        rows.Close()
-        return nil, err
-    }
-    rows.Close()
+	var records []*Post
+	if err := qb.dbc.Scan(rows, &records); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
 
-    sc := goen.NewScopeCache(metaSchema)
-    for _, record := range records {
-        sc.AddObject(record)
-    }
-    if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
-        return nil, err
-    }
+	sc := goen.NewScopeCache(metaSchema)
+	for _, record := range records {
+		sc.AddObject(record)
+	}
+	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+		return nil, err
+	}
 
-    return records, nil
+	return records, nil
 }
-
-
-
-
-
 
 type _Post_BlogID_OrderExpr string
 
 func (s _Post_BlogID_OrderExpr) PostOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Post_BlogID string
 
 func (c _Post_BlogID) PostColumnExpr() string {
-    return "blog_id"
+	return "blog_id"
 }
 
 func (c _Post_BlogID) Eq(v uuid.UUID) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.Eq{"blog_id": v}}
 }
 
 func (c _Post_BlogID) NotEq(v uuid.UUID) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{"blog_id": v}}
 }
 
 func (c _Post_BlogID) In(v []uuid.UUID) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.Eq{"blog_id": v}}
 }
 
 func (c _Post_BlogID) NotIn(v []uuid.UUID) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{"blog_id": v}}
 }
 
-
-
 func (c _Post_BlogID) Asc() PostOrderExpr {
-    return _Post_BlogID_OrderExpr("blog_id")
+	return _Post_BlogID_OrderExpr("blog_id")
 }
 
 func (c _Post_BlogID) Desc() PostOrderExpr {
-    return _Post_BlogID_OrderExpr("blog_id DESC")
+	return _Post_BlogID_OrderExpr("blog_id DESC")
 }
-
-
-
-
-
 
 type _Post_PostID_OrderExpr string
 
 func (s _Post_PostID_OrderExpr) PostOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Post_PostID string
 
 func (c _Post_PostID) PostColumnExpr() string {
-    return "post_id"
+	return "post_id"
 }
 
 func (c _Post_PostID) Eq(v int) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"post_id": v}}
+	return &_PostSqlizer{squirrel.Eq{"post_id": v}}
 }
 
 func (c _Post_PostID) NotEq(v int) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"post_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{"post_id": v}}
 }
 
 func (c _Post_PostID) In(v []int) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"post_id": v}}
+	return &_PostSqlizer{squirrel.Eq{"post_id": v}}
 }
 
 func (c _Post_PostID) NotIn(v []int) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"post_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{"post_id": v}}
 }
 
-
-
 func (c _Post_PostID) Asc() PostOrderExpr {
-    return _Post_PostID_OrderExpr("post_id")
+	return _Post_PostID_OrderExpr("post_id")
 }
 
 func (c _Post_PostID) Desc() PostOrderExpr {
-    return _Post_PostID_OrderExpr("post_id DESC")
+	return _Post_PostID_OrderExpr("post_id DESC")
 }
-
-
-
-
-
 
 type _Post_Title_OrderExpr string
 
 func (s _Post_Title_OrderExpr) PostOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Post_Title string
 
 func (c _Post_Title) PostColumnExpr() string {
-    return "title"
+	return "title"
 }
 
 func (c _Post_Title) Eq(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"title": v}}
+	return &_PostSqlizer{squirrel.Eq{"title": v}}
 }
 
 func (c _Post_Title) NotEq(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"title": v}}
+	return &_PostSqlizer{squirrel.NotEq{"title": v}}
 }
 
 func (c _Post_Title) In(v []string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"title": v}}
+	return &_PostSqlizer{squirrel.Eq{"title": v}}
 }
 
 func (c _Post_Title) NotIn(v []string) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"title": v}}
+	return &_PostSqlizer{squirrel.NotEq{"title": v}}
 }
 
-
 func (c _Post_Title) Like(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Expr("title LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr("title LIKE ?", v)}
 }
 
 func (c _Post_Title) NotLike(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Expr("title NOT LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr("title NOT LIKE ?", v)}
 }
 
-
 func (c _Post_Title) Asc() PostOrderExpr {
-    return _Post_Title_OrderExpr("title")
+	return _Post_Title_OrderExpr("title")
 }
 
 func (c _Post_Title) Desc() PostOrderExpr {
-    return _Post_Title_OrderExpr("title DESC")
+	return _Post_Title_OrderExpr("title DESC")
 }
-
-
-
-
-
 
 type _Post_Content_OrderExpr string
 
 func (s _Post_Content_OrderExpr) PostOrderExpr() string {
-    return string(s)
+	return string(s)
 }
 
 type _Post_Content string
 
 func (c _Post_Content) PostColumnExpr() string {
-    return "content"
+	return "content"
 }
 
 func (c _Post_Content) Eq(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"content": v}}
+	return &_PostSqlizer{squirrel.Eq{"content": v}}
 }
 
 func (c _Post_Content) NotEq(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"content": v}}
+	return &_PostSqlizer{squirrel.NotEq{"content": v}}
 }
 
 func (c _Post_Content) In(v []string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Eq{"content": v}}
+	return &_PostSqlizer{squirrel.Eq{"content": v}}
 }
 
 func (c _Post_Content) NotIn(v []string) PostSqlizer {
-    return &_PostSqlizer{squirrel.NotEq{"content": v}}
+	return &_PostSqlizer{squirrel.NotEq{"content": v}}
 }
 
-
 func (c _Post_Content) Like(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Expr("content LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr("content LIKE ?", v)}
 }
 
 func (c _Post_Content) NotLike(v string) PostSqlizer {
-    return &_PostSqlizer{squirrel.Expr("content NOT LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr("content NOT LIKE ?", v)}
 }
 
-
 func (c _Post_Content) Asc() PostOrderExpr {
-    return _Post_Content_OrderExpr("content")
+	return _Post_Content_OrderExpr("content")
 }
 
 func (c _Post_Content) Desc() PostOrderExpr {
-    return _Post_Content_OrderExpr("content DESC")
+	return _Post_Content_OrderExpr("content DESC")
 }
 
-
-
-
-
 type PostDBSet struct {
-    dbc *goen.DBContext
+	dbc *goen.DBContext
 
-    
-    BlogID _Post_BlogID
-    
-    PostID _Post_PostID
-    
-    Title _Post_Title
-    
-    Content _Post_Content
-    
+	BlogID _Post_BlogID
 
-    
-    
-    IncludeBlog goen.IncludeLoader
-    
-    
+	PostID _Post_PostID
+
+	Title _Post_Title
+
+	Content _Post_Content
+
+	IncludeBlog goen.IncludeLoader
 }
 
 func newPostDBSet(dbc *goen.DBContext) *PostDBSet {
-    dbset := &PostDBSet{
-        dbc: dbc,
-    }
-    dbset.BlogID = "blog_id"
-    dbset.PostID = "post_id"
-    dbset.Title = "title"
-    dbset.Content = "content"
-    
-    
-    
-    dbset.IncludeBlog = goen.IncludeLoaderFunc(dbset.includeBlog)
-    
-    
-    return dbset
-}
+	dbset := &PostDBSet{
+		dbc: dbc,
+	}
+	dbset.BlogID = "blog_id"
+	dbset.PostID = "post_id"
+	dbset.Title = "title"
+	dbset.Content = "content"
 
+	dbset.IncludeBlog = goen.IncludeLoaderFunc(dbset.includeBlog)
+
+	return dbset
+}
 
 func (dbset *PostDBSet) Insert(v *Post) {
-    cols := make([]string, 0, 4)
-    vals := make([]interface{}, 0, 4)
+	cols := make([]string, 0, 4)
+	vals := make([]interface{}, 0, 4)
 
-    
-    cols = append(cols, "blog_id")
-    vals = append(vals, v.BlogID)
-    if !dbset.isZero(v.PostID) {
-        cols = append(cols, "post_id")
-        vals = append(vals, v.PostID)
-    }
-    
-    cols = append(cols, "title")
-    vals = append(vals, v.Title)
-    
-    cols = append(cols, "content")
-    vals = append(vals, v.Content)
-    
+	cols = append(cols, "blog_id")
+	vals = append(vals, v.BlogID)
+	if !dbset.isZero(v.PostID) {
+		cols = append(cols, "post_id")
+		vals = append(vals, v.PostID)
+	}
 
-    dbset.dbc.Patch(&goen.Patch{
-        Kind: goen.PatchInsert,
-        TableName: "posts",
-        Columns: cols,
-        Values: vals,
-    })
+	cols = append(cols, "title")
+	vals = append(vals, v.Title)
+
+	cols = append(cols, "content")
+	vals = append(vals, v.Content)
+
+	dbset.dbc.Patch(&goen.Patch{
+		Kind:      goen.PatchInsert,
+		TableName: "posts",
+		Columns:   cols,
+		Values:    vals,
+	})
 }
-
 
 func (dbset *PostDBSet) Select() PostQueryBuilder {
-    // for caching reason, wont support filtering columns
-    return newPostQueryBuilder(dbset.dbc, []string{
-        "blog_id",
-        "post_id",
-        "title",
-        "content",
-        })
+	// for caching reason, wont support filtering columns
+	return newPostQueryBuilder(dbset.dbc, []string{
+		"blog_id",
+		"post_id",
+		"title",
+		"content",
+	})
 }
-
 
 func (dbset *PostDBSet) Update(v *Post) {
-    cols := []string{
-        "blog_id",
-        "title",
-        "content",
-        }
-    vals := []interface{}{
-        v.BlogID,
-        v.Title,
-        v.Content,
-        }
-    dbset.dbc.Patch(&goen.Patch{
-        Kind: goen.PatchUpdate,
-        TableName: "posts",
-        RowKey: dbset.PrimaryKey(v),
-        Columns: cols,
-        Values: vals,
-    })
+	cols := []string{
+		"blog_id",
+		"title",
+		"content",
+	}
+	vals := []interface{}{
+		v.BlogID,
+		v.Title,
+		v.Content,
+	}
+	dbset.dbc.Patch(&goen.Patch{
+		Kind:      goen.PatchUpdate,
+		TableName: "posts",
+		RowKey:    dbset.PrimaryKey(v),
+		Columns:   cols,
+		Values:    vals,
+	})
 }
-
-
 
 func (dbset *PostDBSet) Delete(v *Post) {
-    dbset.dbc.Patch(&goen.Patch{
-        Kind: goen.PatchDelete,
-        TableName: "posts",
-        RowKey: dbset.PrimaryKey(v),
-    })
+	dbset.dbc.Patch(&goen.Patch{
+		Kind:      goen.PatchDelete,
+		TableName: "posts",
+		RowKey:    dbset.PrimaryKey(v),
+	})
 }
 
-
 func (dbset *PostDBSet) PrimaryKey(v *Post) goen.RowKey {
-    return &goen.MapRowKey{
-        Table: "posts",
-        Key: map[string]interface{}{
-            "post_id": v.PostID,
-            },
-    }
+	return &goen.MapRowKey{
+		Table: "posts",
+		Key: map[string]interface{}{
+			"post_id": v.PostID,
+		},
+	}
 }
 
 func (dbset *PostDBSet) isZero(v interface{}) bool {
-    rv := reflect.ValueOf(v)
-    zero := reflect.Zero(rv.Type())
-    return reflect.DeepEqual(rv.Interface(), zero.Interface())
+	rv := reflect.ValueOf(v)
+	zero := reflect.Zero(rv.Type())
+	return reflect.DeepEqual(rv.Interface(), zero.Interface())
 }
-
-
-
-
-
-
-
 
 func (dbset *PostDBSet) includeBlog(later *list.List, sc *goen.ScopeCache, records interface{}) error {
-    entities, ok := records.([]*Post)
-    if !ok {
-        return nil
-    }
+	entities, ok := records.([]*Post)
+	if !ok {
+		return nil
+	}
 
-    childRowKeyOf := func(v *Post) goen.RowKey {
-        return &goen.MapRowKey{
-            Table: "blogs",
-            Key: map[string]interface{}{
-                "blog_id": v.BlogID,
-                },
-        }
-    }
+	childRowKeyOf := func(v *Post) goen.RowKey {
+		return &goen.MapRowKey{
+			Table: "blogs",
+			Key: map[string]interface{}{
+				"blog_id": v.BlogID,
+			},
+		}
+	}
 
-    // filter cached entity
-    cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
-    noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
-    for _, entity := range entities {
-        key := childRowKeyOf(entity)
-        if sc.HasObject(key) {
-            cachedChildRowKeys = append(cachedChildRowKeys, key)
-        } else {
-            noCachedChildRowKeys = append(noCachedChildRowKeys, key)
-        }
-    }
-    if len(noCachedChildRowKeys) > 0 {
-        cond := squirrel.Or{}
-        for _, rowKey := range noCachedChildRowKeys {
-            cond = append(cond, rowKey)
-        }
-        query, args, err := squirrel.Select(
-            "blog_id",
-            "name",
-            "author",
-            ).From("blogs").Where(cond).ToSql()
-        if err != nil {
-            return err
-        }
-        rows, err := dbset.dbc.Query(query, args...)
-        if err != nil {
-            return err
-        }
+	// filter cached entity
+	cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+	noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
+	for _, entity := range entities {
+		key := childRowKeyOf(entity)
+		if sc.HasObject(key) {
+			cachedChildRowKeys = append(cachedChildRowKeys, key)
+		} else {
+			noCachedChildRowKeys = append(noCachedChildRowKeys, key)
+		}
+	}
+	if len(noCachedChildRowKeys) > 0 {
+		cond := squirrel.Or{}
+		for _, rowKey := range noCachedChildRowKeys {
+			cond = append(cond, rowKey)
+		}
+		query, args, err := squirrel.Select(
+			"blog_id",
+			"name",
+			"author",
+		).From("blogs").Where(cond).ToSql()
+		if err != nil {
+			return err
+		}
+		rows, err := dbset.dbc.Query(query, args...)
+		if err != nil {
+			return err
+		}
 
-        var noCachedEntities []*Blog
-        if err := dbset.dbc.Scan(rows, &noCachedEntities); err != nil {
-            rows.Close()
-            return err
-        }
-        rows.Close()
+		var noCachedEntities []*Blog
+		if err := dbset.dbc.Scan(rows, &noCachedEntities); err != nil {
+			rows.Close()
+			return err
+		}
+		rows.Close()
 
-        for _, entity := range noCachedEntities {
-            sc.AddObject(entity)
-        }
+		for _, entity := range noCachedEntities {
+			sc.AddObject(entity)
+		}
 
-        // for newly loaded entity, to be filled by includeLoader
-        later.PushBack(noCachedEntities)
-    }
+		// for newly loaded entity, to be filled by includeLoader
+		later.PushBack(noCachedEntities)
+	}
 
-    for _, entity := range entities {
-        childRowKey := childRowKeyOf(entity)
-        raw := sc.GetObject(childRowKey)
-        entity.Blog = raw.(*Blog)
-    }
+	for _, entity := range entities {
+		childRowKey := childRowKeyOf(entity)
+		raw := sc.GetObject(childRowKey)
+		entity.Blog = raw.(*Blog)
+	}
 
-    return nil
+	return nil
 }
 
-
-
-
-
-
-
-
-
-
 type DBContext struct {
-    *goen.DBContext
+	*goen.DBContext
 
-    
-    
-    Blog *BlogDBSet
-    
-    
-    Post *PostDBSet
-    
+	Blog *BlogDBSet
+
+	Post *PostDBSet
 }
 
 func NewDBContext(dialectName string, db *sql.DB) *DBContext {
-    dbc := goen.NewDBContext(dialectName, db)
-    return &DBContext{
-        DBContext: dbc,
-        Blog: newBlogDBSet(dbc),
-        Post: newPostDBSet(dbc),
-        }
+	dbc := goen.NewDBContext(dialectName, db)
+	return &DBContext{
+		DBContext: dbc,
+		Blog:      newBlogDBSet(dbc),
+		Post:      newPostDBSet(dbc),
+	}
 }
-
