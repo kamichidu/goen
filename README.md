@@ -5,6 +5,14 @@ goen is a typesafe GOlang ENtity interface for relational databases.
 It provides a way of programmatically to interact with relational databases.
 It aims to implement in a go way and not to provide fully ORM features.
 
+goen has following concepts:
+
+- No any fields or methods introducing into user's struct
+- Work with plain go's `database/sql`
+- Based on RTTI
+- Support bulk operation
+- Go generate is used only for utilities, it's not a core logic
+
 ## Installation
 
 ```
@@ -54,19 +62,20 @@ Let's review the rules and conventions for entity fields:
 | `goen:""` | Indicates this struct as an entity. goen finds structs that have this struct tag. |
 | `table:"table_name"` | Specifies a table name. |
 | `view:"view_name"` | Specifies a view name for readonly entity. |
-| `primary_key:""` | |
-| `primary_key:"column_name"` | |
-| `primary_key:"column_name,omitempty"` | |
-| `primary_key:",omitempty"` | |
-| `column:"column_name"` | |
-| `column:"column_name,omitempty"` | |
-| `column:",omitempty"` | |
-| `foreign_key:"column_name"` | |
-| `foreign_key:"column_name1,column_name2:reference_column_name"` | |
-| `ignore:""` | |
+| `primary_key:""` | Indicates this field is a part of primary key |
+| `primary_key:"column_name"` | Indicates this field is a part of primary key and specifies a column name |
+| `primary_key:"column_name,omitempty"` | Indicates this field is a part of primary key, specifies a column name and this field is omitting if empty |
+| `primary_key:",omitempty"` | Indicates this field is a part of primary key, and this field is omitting if empty |
+| `column:"column_name"` | Specifies a column name |
+| `column:"column_name,omitempty"` | Specifies a column name and this field is omitting if empty |
+| `column:",omitempty"` | Specifies this field is omitting if empty |
+| `foreign_key:"column_name"` | Indicates this field is referencing another entity, and specifies keys |
+| `foreign_key:"column_name1,column_name2:reference_column_name"` | Indicates this field is referencing another entity, and specifies key pairs |
+| `ignore:""` | Specifies this columns is to be ignored |
 
 ## TODO until alpha release
 
+- [ ] write godoc
 - [x] write license header
 - [ ] escape table and column name
 - [ ] <s>tracking changes for entity</s>
