@@ -1,4 +1,5 @@
 [![wercker status](https://app.wercker.com/status/12a1429eafda5aafa0d10f4946551e37/s/master "wercker status")](https://app.wercker.com/project/byKey/12a1429eafda5aafa0d10f4946551e37)
+[![Coverage Status](https://coveralls.io/repos/github/kamichidu/goen/badge.svg)](https://coveralls.io/github/kamichidu/goen)
 [![godoc](https://godoc.org/github.com/kamichidu/goen?status.svg)](https://godoc.org/github.com/kamichidu/goen)
 
 # goen
