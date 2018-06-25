@@ -1,3 +1,5 @@
+[![wercker status](https://app.wercker.com/status/12a1429eafda5aafa0d10f4946551e37/s/master "wercker status")](https://app.wercker.com/project/byKey/12a1429eafda5aafa0d10f4946551e37)
+
 # goen
 
 goen is a typesafe GOlang ENtity interface for relational databases.

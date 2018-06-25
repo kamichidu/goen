@@ -1,0 +1,30 @@
+box: golang
+
+build:
+  steps:
+    - setup-go-workspace
+
+    - script:
+        name: go get
+        code: |
+          go get -v ./...
+
+    - script:
+        name: go build
+        code: |
+          go build ./...
+
+    - script:
+        name: go generate
+        code: |
+          go get -v github.com/satori/go.uuid
+          go get -v github.com/mjibson/esc
+          go generate ./...
+
+    - script:
+        name: go test
+        code: |
+          go get -v github.com/davecgh/go-spew/spew
+          go get -v github.com/mattn/go-sqlite3
+          go get -v github.com/stretchr/testify/...
+          go test -v ./...
