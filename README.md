@@ -33,7 +33,7 @@ Write your first entity is.
 package entity
 
 type User struct {
-    UserID int `goen:"" pk:""`
+    UserID int `goen:"" primary_key:""`
     Name, Email, PasswordHash string
 }
 ```
@@ -51,7 +51,7 @@ Now, all you have to do is run `go generate ./...` and a `goen.go` file will be 
 An entity is just a go struct have a struct tag `goen:""` .
 All fields of this struct will be columns in the database table.
 An entity also needs to have one primary key.
-The primary key is defined using the `pk:""` struct tag on the primary key fields.
+The primary key is defined using the `primary_key:""` struct tag on the primary key fields.
 
 Let's review the rules and conventions for entity fields:
 
