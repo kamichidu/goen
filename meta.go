@@ -29,6 +29,8 @@ type metaColumn struct {
 
 	OmitEmpty bool
 
+	PartOfPrimaryKey bool
+
 	ColumnName string
 }
 
@@ -65,7 +67,7 @@ func (m *MetaSchema) KeyStringFromRowKey(rowKey RowKey) (string, error) {
 	return rowKey.TableName() + ";" + strings.Join(params, ";"), nil
 }
 
-func (m *MetaSchema) RowKeysOf(entity interface{}) (primary RowKey, refes []RowKey) {
+func (m *MetaSchema) PrimaryKeyOf(entity interface{}) RowKey {
 	m.Compute()
 
 	metaT := m.LoadOf(entity)
@@ -78,8 +80,17 @@ func (m *MetaSchema) RowKeysOf(entity interface{}) (primary RowKey, refes []RowK
 		rfv := rv.FieldByName(pk.Field.Name)
 		rowKey.Key[pk.ColumnName] = rfv.Interface()
 	}
-	primary = rowKey
+	return rowKey
+}
 
+func (m *MetaSchema) RowKeysOf(entity interface{}) (primary RowKey, refes []RowKey) {
+	m.Compute()
+
+	primary = m.PrimaryKeyOf(entity)
+
+	metaT := m.LoadOf(entity)
+	rv := reflect.ValueOf(entity)
+	rv = reflect.Indirect(rv)
 	for _, refeKey := range metaT.RefecenceKeys {
 		refe := &MapRowKey{}
 		refe.Table = metaT.TableName
@@ -101,6 +112,70 @@ func (m *MetaSchema) LoadOf(entity interface{}) *metaTable {
 		return metaT.(*metaTable)
 	} else {
 		panic("goen: not registered type of " + typ.String())
+	}
+}
+
+func (m *MetaSchema) InsertPatchOf(entity interface{}) *Patch {
+	metaT := m.LoadOf(entity)
+	var (
+		cols = make([]string, 0, len(metaT.Columns))
+		vals = make([]interface{}, 0, len(metaT.Columns))
+	)
+	rv := reflect.ValueOf(entity)
+	rv = reflect.Indirect(rv)
+	for _, metaC := range metaT.Columns {
+		rfv := rv.FieldByName(metaC.Field.Name)
+		if !rfv.IsValid() || metaC.OmitEmpty && isEmptyValue(rfv) {
+			continue
+		}
+		cols = append(cols, metaC.ColumnName)
+		vals = append(vals, rfv.Interface())
+	}
+	return &Patch{
+		Kind:      PatchInsert,
+		TableName: metaT.TableName,
+		Columns:   cols,
+		Values:    vals,
+	}
+}
+
+func (m *MetaSchema) UpdatePatchOf(entity interface{}) *Patch {
+	metaT := m.LoadOf(entity)
+	var (
+		cols = make([]string, 0, len(metaT.Columns))
+		vals = make([]interface{}, 0, len(metaT.Columns))
+	)
+	rv := reflect.ValueOf(entity)
+	rv = reflect.Indirect(rv)
+	for _, metaC := range metaT.Columns {
+		// non-pk columns appears in set clause
+		if metaC.PartOfPrimaryKey {
+			continue
+		}
+		rfv := rv.FieldByName(metaC.Field.Name)
+		if !rfv.IsValid() || metaC.OmitEmpty && isEmptyValue(rfv) {
+			continue
+		}
+		cols = append(cols, metaC.ColumnName)
+		vals = append(vals, rfv.Interface())
+	}
+	return &Patch{
+		Kind:      PatchUpdate,
+		TableName: metaT.TableName,
+		Columns:   cols,
+		Values:    vals,
+		// update only given entitty filtered by its primary key
+		RowKey: m.PrimaryKeyOf(entity),
+	}
+}
+
+func (m *MetaSchema) DeletePatchOf(entity interface{}) *Patch {
+	metaT := m.LoadOf(entity)
+	return &Patch{
+		Kind:      PatchDelete,
+		TableName: metaT.TableName,
+		// delete only given entitty filtered by its primary key
+		RowKey: m.PrimaryKeyOf(entity),
 	}
 }
 
@@ -145,15 +220,19 @@ func (m *MetaSchema) computeOf(typ reflect.Type) *metaTable {
 			continue
 		}
 
+		_, partOfPrimaryKey := sf.Tag.Lookup(internal.TagPrimaryKey)
+
 		spec := internal.ColumnSpec(sf.Tag)
 		metaC := &metaColumn{
-			Field:      sf,
-			OmitEmpty:  spec.OmitEmpty(),
-			ColumnName: internal.FirstNotEmpty(spec.Name(), strcase.SnakeCase(sf.Name)),
+			Field:            sf,
+			OmitEmpty:        spec.OmitEmpty(),
+			PartOfPrimaryKey: partOfPrimaryKey,
+			ColumnName:       internal.FirstNotEmpty(spec.Name(), strcase.SnakeCase(sf.Name)),
 		}
-		metaT.Columns = append(metaT.Columns, metaC)
-
-		if _, ok := sf.Tag.Lookup(internal.TagPrimaryKey); ok {
+		if _, refeField := sf.Tag.Lookup(internal.TagForeignKey); !refeField {
+			metaT.Columns = append(metaT.Columns, metaC)
+		}
+		if partOfPrimaryKey {
 			metaT.PrimaryKey = append(metaT.PrimaryKey, metaC)
 		}
 		metaT.RefecenceKeys = m.computeReferenceKeysOf(typ)
@@ -191,10 +270,12 @@ func (m *MetaSchema) computeReferenceKeysOf(typ reflect.Type) [][]*metaColumn {
 					if columnName != childKey {
 						continue
 					}
+					_, partOfPrimaryKey := childField.Tag.Lookup(internal.TagPrimaryKey)
 					key = append(key, &metaColumn{
-						Field:      childField,
-						ColumnName: columnName,
-						OmitEmpty:  childSpec.OmitEmpty(),
+						Field:            childField,
+						ColumnName:       columnName,
+						PartOfPrimaryKey: partOfPrimaryKey,
+						OmitEmpty:        childSpec.OmitEmpty(),
 					})
 				}
 			}
@@ -204,4 +285,22 @@ func (m *MetaSchema) computeReferenceKeysOf(typ reflect.Type) [][]*metaColumn {
 		}
 	}
 	return keys
+}
+
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	}
+	return false
 }

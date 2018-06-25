@@ -7,7 +7,6 @@ package example
 import (
 	"container/list"
 	"database/sql"
-	"reflect"
 
 	"github.com/kamichidu/goen"
 	"github.com/satori/go.uuid"
@@ -255,74 +254,25 @@ func newBlogDBSet(dbc *goen.DBContext) *BlogDBSet {
 }
 
 func (dbset *BlogDBSet) Insert(v *Blog) {
-	cols := make([]string, 0, 3)
-	vals := make([]interface{}, 0, 3)
-
-	cols = append(cols, "blog_id")
-	vals = append(vals, v.BlogID)
-
-	cols = append(cols, "name")
-	vals = append(vals, v.Name)
-
-	cols = append(cols, "author")
-	vals = append(vals, v.Author)
-
-	dbset.dbc.Patch(&goen.Patch{
-		Kind:      goen.PatchInsert,
-		TableName: "blogs",
-		Columns:   cols,
-		Values:    vals,
-	})
+	dbset.dbc.Patch(metaSchema.InsertPatchOf(v))
 }
 
 func (dbset *BlogDBSet) Select() BlogQueryBuilder {
 	// for caching reason, wont support filtering columns
-	return newBlogQueryBuilder(dbset.dbc, []string{
-		"blog_id",
-		"name",
-		"author",
-	})
+	metaT := metaSchema.LoadOf(&Blog{})
+	cols := make([]string, len(metaT.Columns))
+	for i := range metaT.Columns {
+		cols[i] = metaT.Columns[i].ColumnName
+	}
+	return newBlogQueryBuilder(dbset.dbc, cols)
 }
 
 func (dbset *BlogDBSet) Update(v *Blog) {
-	cols := []string{
-		"name",
-		"author",
-	}
-	vals := []interface{}{
-		v.Name,
-		v.Author,
-	}
-	dbset.dbc.Patch(&goen.Patch{
-		Kind:      goen.PatchUpdate,
-		TableName: "blogs",
-		RowKey:    dbset.PrimaryKey(v),
-		Columns:   cols,
-		Values:    vals,
-	})
+	dbset.dbc.Patch(metaSchema.UpdatePatchOf(v))
 }
 
 func (dbset *BlogDBSet) Delete(v *Blog) {
-	dbset.dbc.Patch(&goen.Patch{
-		Kind:      goen.PatchDelete,
-		TableName: "blogs",
-		RowKey:    dbset.PrimaryKey(v),
-	})
-}
-
-func (dbset *BlogDBSet) PrimaryKey(v *Blog) goen.RowKey {
-	return &goen.MapRowKey{
-		Table: "blogs",
-		Key: map[string]interface{}{
-			"blog_id": v.BlogID,
-		},
-	}
-}
-
-func (dbset *BlogDBSet) isZero(v interface{}) bool {
-	rv := reflect.ValueOf(v)
-	zero := reflect.Zero(rv.Type())
-	return reflect.DeepEqual(rv.Interface(), zero.Interface())
+	dbset.dbc.Patch(metaSchema.DeletePatchOf(v))
 }
 
 func (dbset *BlogDBSet) includePosts(later *list.List, sc *goen.ScopeCache, records interface{}) error {
@@ -678,81 +628,25 @@ func newPostDBSet(dbc *goen.DBContext) *PostDBSet {
 }
 
 func (dbset *PostDBSet) Insert(v *Post) {
-	cols := make([]string, 0, 4)
-	vals := make([]interface{}, 0, 4)
-
-	cols = append(cols, "blog_id")
-	vals = append(vals, v.BlogID)
-	if !dbset.isZero(v.PostID) {
-		cols = append(cols, "post_id")
-		vals = append(vals, v.PostID)
-	}
-
-	cols = append(cols, "title")
-	vals = append(vals, v.Title)
-
-	cols = append(cols, "content")
-	vals = append(vals, v.Content)
-
-	dbset.dbc.Patch(&goen.Patch{
-		Kind:      goen.PatchInsert,
-		TableName: "posts",
-		Columns:   cols,
-		Values:    vals,
-	})
+	dbset.dbc.Patch(metaSchema.InsertPatchOf(v))
 }
 
 func (dbset *PostDBSet) Select() PostQueryBuilder {
 	// for caching reason, wont support filtering columns
-	return newPostQueryBuilder(dbset.dbc, []string{
-		"blog_id",
-		"post_id",
-		"title",
-		"content",
-	})
+	metaT := metaSchema.LoadOf(&Post{})
+	cols := make([]string, len(metaT.Columns))
+	for i := range metaT.Columns {
+		cols[i] = metaT.Columns[i].ColumnName
+	}
+	return newPostQueryBuilder(dbset.dbc, cols)
 }
 
 func (dbset *PostDBSet) Update(v *Post) {
-	cols := []string{
-		"blog_id",
-		"title",
-		"content",
-	}
-	vals := []interface{}{
-		v.BlogID,
-		v.Title,
-		v.Content,
-	}
-	dbset.dbc.Patch(&goen.Patch{
-		Kind:      goen.PatchUpdate,
-		TableName: "posts",
-		RowKey:    dbset.PrimaryKey(v),
-		Columns:   cols,
-		Values:    vals,
-	})
+	dbset.dbc.Patch(metaSchema.UpdatePatchOf(v))
 }
 
 func (dbset *PostDBSet) Delete(v *Post) {
-	dbset.dbc.Patch(&goen.Patch{
-		Kind:      goen.PatchDelete,
-		TableName: "posts",
-		RowKey:    dbset.PrimaryKey(v),
-	})
-}
-
-func (dbset *PostDBSet) PrimaryKey(v *Post) goen.RowKey {
-	return &goen.MapRowKey{
-		Table: "posts",
-		Key: map[string]interface{}{
-			"post_id": v.PostID,
-		},
-	}
-}
-
-func (dbset *PostDBSet) isZero(v interface{}) bool {
-	rv := reflect.ValueOf(v)
-	zero := reflect.Zero(rv.Type())
-	return reflect.DeepEqual(rv.Interface(), zero.Interface())
+	dbset.dbc.Patch(metaSchema.DeletePatchOf(v))
 }
 
 func (dbset *PostDBSet) includeBlog(later *list.List, sc *goen.ScopeCache, records interface{}) error {

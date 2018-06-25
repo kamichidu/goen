@@ -185,7 +185,6 @@ func (g *Generator) walkPkg(pkg *ast.Package) error {
 	// required imports
 	g.addImport("container/list")
 	g.addImport("database/sql")
-	g.addImport("reflect")
 	g.addImport("gopkg.in/Masterminds/squirrel.v1")
 	g.addImport("github.com/kamichidu/goen")
 	if g.OutPkgName != "" {
