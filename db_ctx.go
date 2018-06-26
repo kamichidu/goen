@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"context"
 	"database/sql"
-	"encoding"
 	"fmt"
 	"log"
 	"reflect"
@@ -77,7 +76,22 @@ func (dbc *DBContext) Query(query string, args ...interface{}) (*sql.Rows, error
 	if dbc.debug {
 		log.Printf("goen: %q with %v", query, args)
 	}
-	return dbc.stmtCacher.Query(query, args...)
+	stmt, err := dbc.stmtCacher.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	return stmt.Query(args...)
+}
+
+func (dbc *DBContext) QueryRow(query string, args ...interface{}) *sql.Row {
+	if dbc.debug {
+		log.Printf("goen: %q with %v", query, args)
+	}
+	stmt, err := dbc.stmtCacher.Prepare(query)
+	if err != nil {
+		panic(err)
+	}
+	return stmt.QueryRow(args...)
 }
 
 func (dbc *DBContext) Scan(rows *sql.Rows, v interface{}) error {
@@ -124,33 +138,28 @@ func (dbc *DBContext) Include(v interface{}, sc *ScopeCache, loader IncludeLoade
 func (dbc *DBContext) scanRow(rows sqr.RowScanner, cols []*sql.ColumnType, rowTyp reflect.Type) (reflect.Value, error) {
 	switch rowTyp.Kind() {
 	case reflect.Slice:
-		slice := reflect.MakeSlice(rowTyp, len(cols), len(cols))
-		scanArgs := make([]interface{}, len(cols))
+		dest := make([]interface{}, len(cols))
+		args := make([]interface{}, len(cols))
 		for i := range cols {
-			scanTyp := dbc.dialect.ScanTypeOf(cols[i])
-			scanArg := reflect.New(scanTyp).Elem()
-			el := slice.Index(i)
-			el.Set(scanArg)
-			scanArgs[i] = el.Addr().Interface()
+			// if possible to get ScanType, suggest to use its type
+			if typ := dbc.dialect.ScanTypeOf(cols[i]); typ != nil {
+				dest[i] = reflect.New(typ).Elem()
+			}
+			args[i] = &dest[i]
 		}
-		if err := rows.Scan(scanArgs...); err != nil {
+		if err := rows.Scan(args...); err != nil {
 			return reflect.Value{}, err
 		}
-		return slice, nil
+		return reflect.ValueOf(dest), nil
 	case reflect.Map:
-		scanArgs := make([]interface{}, len(cols))
-		for i := range cols {
-			scanTyp := dbc.dialect.ScanTypeOf(cols[i])
-			scanArg := reflect.New(scanTyp).Elem()
-			scanArgs[i] = scanArg.Addr().Interface()
-		}
-		if err := rows.Scan(scanArgs...); err != nil {
-			return reflect.Value{}, err
+		res, err := dbc.scanRow(rows, cols, reflect.SliceOf(reflect.TypeOf((*interface{})(nil)).Elem()))
+		if err != nil {
+			return res, err
 		}
 		m := reflect.MakeMapWithSize(rowTyp, len(cols))
 		for i := range cols {
 			key := reflect.ValueOf(cols[i].Name())
-			value := reflect.ValueOf(scanArgs[i]).Elem()
+			value := res.Index(i)
 			m.SetMapIndex(key, value)
 		}
 		return m, nil
@@ -161,95 +170,27 @@ func (dbc *DBContext) scanRow(rows sqr.RowScanner, cols []*sql.ColumnType, rowTy
 		}
 		return res, err
 	case reflect.Struct:
-		scanArgs := make([]interface{}, len(cols))
+		dest := reflect.New(rowTyp).Elem()
+		args := make([]interface{}, len(cols))
 		for i := range cols {
-			scanTyp := dbc.dialect.ScanTypeOf(cols[i])
-			scanArg := reflect.New(scanTyp).Elem()
-			scanArgs[i] = scanArg.Addr().Interface()
-		}
-		if err := rows.Scan(scanArgs...); err != nil {
-			return reflect.Value{}, err
-		}
-		st := reflect.New(rowTyp).Elem()
-		for i := range cols {
-			fv := st.FieldByNameFunc(func(name string) bool {
-				sf, _ := st.Type().FieldByName(name)
-				spec := internal.ColumnSpec(sf.Tag)
+			rfv := dest.FieldByNameFunc(func(name string) bool {
+				field, _ := dest.Type().FieldByName(name)
+				spec := internal.ColumnSpec(field.Tag)
 				columnName := internal.FirstNotEmpty(spec.Name(), strcase.SnakeCase(name))
 				return columnName == cols[i].Name()
 			})
-			if !fv.IsValid() {
-				panic("goen: unknown struct field for column " + cols[i].Name() + " on " + rowTyp.String())
+			if !rfv.IsValid() {
+				panic(fmt.Sprintf("goen: unknown struct field for column %q on %v", cols[i].Name(), rowTyp))
 			}
-			if err := dbc.scanColumn(fv, reflect.ValueOf(scanArgs[i]).Elem().Interface()); err != nil {
-				return reflect.Value{}, err
-			}
+			args[i] = rfv.Addr().Interface()
 		}
-		return st, nil
+		if err := rows.Scan(args...); err != nil {
+			return reflect.Value{}, err
+		}
+		return dest, nil
 	default:
 		return reflect.Value{}, fmt.Errorf("goen: unsupported scan type %q", rowTyp)
 	}
-}
-
-func (dbc *DBContext) scanColumn(v reflect.Value, src interface{}) error {
-	if !v.CanSet() {
-		panic("goen: v is not settable " + v.String())
-	}
-	scanner, bu, tu, v := dbc.indirectScanner(v)
-	if scanner != nil {
-		return scanner.Scan(src)
-	}
-
-	switch raw := src.(type) {
-	case []byte:
-		if bu != nil {
-			return bu.UnmarshalBinary(raw)
-		}
-		if tu != nil {
-			return tu.UnmarshalText(raw)
-		}
-	case string:
-		if tu != nil {
-			return tu.UnmarshalText([]byte(raw))
-		}
-	}
-
-	sv := reflect.ValueOf(src)
-	if sv.IsValid() && sv.Type().AssignableTo(v.Type()) {
-		v.Set(sv)
-	} else if sv.Kind() == v.Kind() && sv.Type().ConvertibleTo(v.Type()) {
-		v.Set(sv.Convert(v.Type()))
-	}
-	return nil
-}
-
-func (dbc *DBContext) indirectScanner(v reflect.Value) (sql.Scanner, encoding.BinaryUnmarshaler, encoding.TextUnmarshaler, reflect.Value) {
-	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
-		v = v.Addr()
-	}
-
-	for {
-		if v.Kind() != reflect.Ptr {
-			break
-		}
-		if v.IsNil() {
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-		if v.NumMethod() > 0 {
-			raw := v.Interface()
-			if u, ok := raw.(sql.Scanner); ok {
-				return u, nil, nil, v
-			}
-			if u, ok := raw.(encoding.BinaryUnmarshaler); ok {
-				return nil, u, nil, v
-			}
-			if u, ok := raw.(encoding.TextUnmarshaler); ok {
-				return nil, nil, u, v
-			}
-		}
-		v = v.Elem()
-	}
-	return nil, nil, nil, v
 }
 
 func (dbc *DBContext) CompilePatch() *list.List {
