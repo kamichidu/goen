@@ -3,12 +3,50 @@ package goen_test
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/kamichidu/goen"
 	_ "github.com/kamichidu/goen/dialect/sqlite3"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func ExampleBulkOperation() {
+	db, err := sql.Open("sqlite3", "./sqlite.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	ddl := []string{
+		`drop table if exists testing`,
+		`create table testing (id integer primary key, name varchar(256))`,
+	}
+	if _, err := db.Exec(strings.Join(ddl, ";")); err != nil {
+		panic(err)
+	}
+
+	dbc := goen.NewDBContext("sqlite3", db)
+
+	// set patch compiler, it compiles patches to bulk
+	dbc.Compiler = goen.BulkInsertCompiler
+
+	for i := 0; i < 3; i++ {
+		dbc.Patch(goen.InsertPatch(
+			"testing",
+			[]string{"name"},
+			[]interface{}{fmt.Sprintf("name-%d", i)},
+		))
+	}
+	// Output:
+	// goen: "INSERT INTO testing (name) VALUES (?),(?),(?)" with [name-0 name-1 name-2]
+	dbc.DebugMode(true)
+	dbc.Logger = log.New(os.Stdout, "", 0)
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+}
 
 func ExampleQueryCount() {
 	db, err := sql.Open("sqlite3", "./sqlite.db")

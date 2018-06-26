@@ -19,6 +19,8 @@ type DBContext struct {
 
 	Compiler PatchCompiler
 
+	Logger Logger
+
 	dialect dialect.Dialect
 
 	debug bool
@@ -74,7 +76,7 @@ func (dbc *DBContext) Patch(v *Patch) {
 
 func (dbc *DBContext) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	if dbc.debug {
-		log.Printf("goen: %q with %v", query, args)
+		dbc.debugPrintf("goen: %q with %v", query, args)
 	}
 	stmt, err := dbc.stmtCacher.Prepare(query)
 	if err != nil {
@@ -85,7 +87,7 @@ func (dbc *DBContext) Query(query string, args ...interface{}) (*sql.Rows, error
 
 func (dbc *DBContext) QueryRow(query string, args ...interface{}) *sql.Row {
 	if dbc.debug {
-		log.Printf("goen: %q with %v", query, args)
+		dbc.debugPrintf("goen: %q with %v", query, args)
 	}
 	stmt, err := dbc.stmtCacher.Prepare(query)
 	if err != nil {
@@ -220,7 +222,7 @@ func (dbc *DBContext) SaveChangesContext(ctx context.Context) error {
 			return err
 		}
 		if dbc.debug {
-			log.Printf("goen: %q with %v", query, args)
+			dbc.debugPrintf("goen: %q with %v", query, args)
 		}
 		stmt, err := dbc.stmtCacher.PrepareContext(ctx, query)
 		if err != nil {
@@ -231,4 +233,24 @@ func (dbc *DBContext) SaveChangesContext(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (dbc *DBContext) debugPrint(v ...interface{}) {
+	if l, ok := dbc.Logger.(leveledLogger); ok {
+		l.Debug(v...)
+	} else if dbc.Logger != nil {
+		dbc.Logger.Print(v...)
+	} else {
+		log.Print(v...)
+	}
+}
+
+func (dbc *DBContext) debugPrintf(format string, args ...interface{}) {
+	if l, ok := dbc.Logger.(leveledLogger); ok {
+		l.Debugf(format, args...)
+	} else if dbc.Logger != nil {
+		dbc.Logger.Printf(format, args...)
+	} else {
+		log.Printf(format, args...)
+	}
 }
