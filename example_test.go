@@ -12,7 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func ExampleBulkOperation() {
+func Example_bulkOperation() {
 	db, err := sql.Open("sqlite3", "./sqlite.db")
 	if err != nil {
 		panic(err)
@@ -48,7 +48,7 @@ func ExampleBulkOperation() {
 	}
 }
 
-func ExampleQueryCount() {
+func Example_queryCount() {
 	db, err := sql.Open("sqlite3", "./sqlite.db")
 	if err != nil {
 		panic(err)
@@ -107,7 +107,7 @@ func ExampleQueryCount() {
 	}
 }
 
-func ExampleTransaction() {
+func Example_transaction() {
 	db, err := sql.Open("sqlite3", "./sqlite.db")
 	if err != nil {
 		panic(err)
