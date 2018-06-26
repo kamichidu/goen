@@ -22,6 +22,8 @@ func (sqlizer *{{ $sqlizerImpl }}) {{ $.Entity }}ToSql() (string, []interface{},
 
 type {{ $columnType }} interface {
     {{ $.Entity }}ColumnExpr() string
+
+    String() string
 }
 
 type {{ $orderType }} interface {
@@ -107,41 +109,45 @@ func (s {{ $columnOrderType }}) {{ $.Entity }}OrderExpr() string {
 type {{ $typ }} string
 
 func (c {{ $typ }}) {{ $.Entity }}ColumnExpr() string {
-    return "{{ $column.ColumnName }}"
+    return string(c)
+}
+
+func (c {{ $typ }}) String() string {
+    return string(c)
 }
 
 func (c {{ $typ }}) Eq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Eq{"{{ $column.ColumnName }}": v}}
+    return &{{ $sqlizerImpl}}{squirrel.Eq{string(c): v}}
 }
 
 func (c {{ $typ }}) NotEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.NotEq{"{{ $column.ColumnName }}": v}}
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{string(c): v}}
 }
 
 func (c {{ $typ }}) In(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Eq{"{{ $column.ColumnName }}": v}}
+    return &{{ $sqlizerImpl}}{squirrel.Eq{string(c): v}}
 }
 
 func (c {{ $typ }}) NotIn(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.NotEq{"{{ $column.ColumnName }}": v}}
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{string(c): v}}
 }
 
 {{ if eq $column.FieldType "string" }}
 func (c {{ $typ }}) Like(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr("{{ $column.ColumnName }} LIKE ?", v)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " LIKE ?", v)}
 }
 
 func (c {{ $typ }}) NotLike(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr("{{ $column.ColumnName }} NOT LIKE ?", v)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " NOT LIKE ?", v)}
 }
 {{ end }}
 
 func (c {{ $typ }}) Asc() {{ $orderType }} {
-    return {{ $columnOrderType }}("{{ $column.ColumnName }}")
+    return {{ $columnOrderType }}(string(c))
 }
 
 func (c {{ $typ }}) Desc() {{ $orderType }} {
-    return {{ $columnOrderType }}("{{ $column.ColumnName }} DESC")
+    return {{ $columnOrderType }}(string(c) + " DESC")
 }
 
 {{ end }}

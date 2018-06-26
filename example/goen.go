@@ -34,6 +34,8 @@ func (sqlizer *_BlogSqlizer) BlogToSql() (string, []interface{}, error) {
 
 type BlogColumnExpr interface {
 	BlogColumnExpr() string
+
+	String() string
 }
 
 type BlogOrderExpr interface {
@@ -114,31 +116,35 @@ func (s _Blog_BlogID_OrderExpr) BlogOrderExpr() string {
 type _Blog_BlogID string
 
 func (c _Blog_BlogID) BlogColumnExpr() string {
-	return "blog_id"
+	return string(c)
+}
+
+func (c _Blog_BlogID) String() string {
+	return string(c)
 }
 
 func (c _Blog_BlogID) Eq(v uuid.UUID) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Blog_BlogID) NotEq(v uuid.UUID) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Blog_BlogID) In(v []uuid.UUID) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Blog_BlogID) NotIn(v []uuid.UUID) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Blog_BlogID) Asc() BlogOrderExpr {
-	return _Blog_BlogID_OrderExpr("blog_id")
+	return _Blog_BlogID_OrderExpr(string(c))
 }
 
 func (c _Blog_BlogID) Desc() BlogOrderExpr {
-	return _Blog_BlogID_OrderExpr("blog_id DESC")
+	return _Blog_BlogID_OrderExpr(string(c) + " DESC")
 }
 
 type _Blog_Name_OrderExpr string
@@ -150,39 +156,43 @@ func (s _Blog_Name_OrderExpr) BlogOrderExpr() string {
 type _Blog_Name string
 
 func (c _Blog_Name) BlogColumnExpr() string {
-	return "name"
+	return string(c)
+}
+
+func (c _Blog_Name) String() string {
+	return string(c)
 }
 
 func (c _Blog_Name) Eq(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Eq{"name": v}}
+	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Blog_Name) NotEq(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.NotEq{"name": v}}
+	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Blog_Name) In(v []string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Eq{"name": v}}
+	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Blog_Name) NotIn(v []string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.NotEq{"name": v}}
+	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Blog_Name) Like(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Expr("name LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
 }
 
 func (c _Blog_Name) NotLike(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Expr("name NOT LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
 func (c _Blog_Name) Asc() BlogOrderExpr {
-	return _Blog_Name_OrderExpr("name")
+	return _Blog_Name_OrderExpr(string(c))
 }
 
 func (c _Blog_Name) Desc() BlogOrderExpr {
-	return _Blog_Name_OrderExpr("name DESC")
+	return _Blog_Name_OrderExpr(string(c) + " DESC")
 }
 
 type _Blog_Author_OrderExpr string
@@ -194,39 +204,43 @@ func (s _Blog_Author_OrderExpr) BlogOrderExpr() string {
 type _Blog_Author string
 
 func (c _Blog_Author) BlogColumnExpr() string {
-	return "author"
+	return string(c)
+}
+
+func (c _Blog_Author) String() string {
+	return string(c)
 }
 
 func (c _Blog_Author) Eq(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Eq{"author": v}}
+	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Blog_Author) NotEq(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.NotEq{"author": v}}
+	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Blog_Author) In(v []string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Eq{"author": v}}
+	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Blog_Author) NotIn(v []string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.NotEq{"author": v}}
+	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Blog_Author) Like(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Expr("author LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
 }
 
 func (c _Blog_Author) NotLike(v string) BlogSqlizer {
-	return &_BlogSqlizer{squirrel.Expr("author NOT LIKE ?", v)}
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
 func (c _Blog_Author) Asc() BlogOrderExpr {
-	return _Blog_Author_OrderExpr("author")
+	return _Blog_Author_OrderExpr(string(c))
 }
 
 func (c _Blog_Author) Desc() BlogOrderExpr {
-	return _Blog_Author_OrderExpr("author DESC")
+	return _Blog_Author_OrderExpr(string(c) + " DESC")
 }
 
 type BlogDBSet struct {
@@ -371,6 +385,8 @@ func (sqlizer *_PostSqlizer) PostToSql() (string, []interface{}, error) {
 
 type PostColumnExpr interface {
 	PostColumnExpr() string
+
+	String() string
 }
 
 type PostOrderExpr interface {
@@ -451,31 +467,35 @@ func (s _Post_CreatedAt_OrderExpr) PostOrderExpr() string {
 type _Post_CreatedAt string
 
 func (c _Post_CreatedAt) PostColumnExpr() string {
-	return "created_at"
+	return string(c)
+}
+
+func (c _Post_CreatedAt) String() string {
+	return string(c)
 }
 
 func (c _Post_CreatedAt) Eq(v time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"created_at": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_CreatedAt) NotEq(v time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"created_at": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_CreatedAt) In(v []time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"created_at": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_CreatedAt) NotIn(v []time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"created_at": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_CreatedAt) Asc() PostOrderExpr {
-	return _Post_CreatedAt_OrderExpr("created_at")
+	return _Post_CreatedAt_OrderExpr(string(c))
 }
 
 func (c _Post_CreatedAt) Desc() PostOrderExpr {
-	return _Post_CreatedAt_OrderExpr("created_at DESC")
+	return _Post_CreatedAt_OrderExpr(string(c) + " DESC")
 }
 
 type _Post_UpdatedAt_OrderExpr string
@@ -487,31 +507,35 @@ func (s _Post_UpdatedAt_OrderExpr) PostOrderExpr() string {
 type _Post_UpdatedAt string
 
 func (c _Post_UpdatedAt) PostColumnExpr() string {
-	return "updated_at"
+	return string(c)
+}
+
+func (c _Post_UpdatedAt) String() string {
+	return string(c)
 }
 
 func (c _Post_UpdatedAt) Eq(v time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"updated_at": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_UpdatedAt) NotEq(v time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"updated_at": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_UpdatedAt) In(v []time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"updated_at": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_UpdatedAt) NotIn(v []time.Time) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"updated_at": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_UpdatedAt) Asc() PostOrderExpr {
-	return _Post_UpdatedAt_OrderExpr("updated_at")
+	return _Post_UpdatedAt_OrderExpr(string(c))
 }
 
 func (c _Post_UpdatedAt) Desc() PostOrderExpr {
-	return _Post_UpdatedAt_OrderExpr("updated_at DESC")
+	return _Post_UpdatedAt_OrderExpr(string(c) + " DESC")
 }
 
 type _Post_BlogID_OrderExpr string
@@ -523,31 +547,35 @@ func (s _Post_BlogID_OrderExpr) PostOrderExpr() string {
 type _Post_BlogID string
 
 func (c _Post_BlogID) PostColumnExpr() string {
-	return "blog_id"
+	return string(c)
+}
+
+func (c _Post_BlogID) String() string {
+	return string(c)
 }
 
 func (c _Post_BlogID) Eq(v uuid.UUID) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_BlogID) NotEq(v uuid.UUID) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_BlogID) In(v []uuid.UUID) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_BlogID) NotIn(v []uuid.UUID) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"blog_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_BlogID) Asc() PostOrderExpr {
-	return _Post_BlogID_OrderExpr("blog_id")
+	return _Post_BlogID_OrderExpr(string(c))
 }
 
 func (c _Post_BlogID) Desc() PostOrderExpr {
-	return _Post_BlogID_OrderExpr("blog_id DESC")
+	return _Post_BlogID_OrderExpr(string(c) + " DESC")
 }
 
 type _Post_PostID_OrderExpr string
@@ -559,31 +587,35 @@ func (s _Post_PostID_OrderExpr) PostOrderExpr() string {
 type _Post_PostID string
 
 func (c _Post_PostID) PostColumnExpr() string {
-	return "post_id"
+	return string(c)
+}
+
+func (c _Post_PostID) String() string {
+	return string(c)
 }
 
 func (c _Post_PostID) Eq(v int) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"post_id": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_PostID) NotEq(v int) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"post_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_PostID) In(v []int) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"post_id": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_PostID) NotIn(v []int) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"post_id": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_PostID) Asc() PostOrderExpr {
-	return _Post_PostID_OrderExpr("post_id")
+	return _Post_PostID_OrderExpr(string(c))
 }
 
 func (c _Post_PostID) Desc() PostOrderExpr {
-	return _Post_PostID_OrderExpr("post_id DESC")
+	return _Post_PostID_OrderExpr(string(c) + " DESC")
 }
 
 type _Post_Title_OrderExpr string
@@ -595,39 +627,43 @@ func (s _Post_Title_OrderExpr) PostOrderExpr() string {
 type _Post_Title string
 
 func (c _Post_Title) PostColumnExpr() string {
-	return "title"
+	return string(c)
+}
+
+func (c _Post_Title) String() string {
+	return string(c)
 }
 
 func (c _Post_Title) Eq(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"title": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_Title) NotEq(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"title": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_Title) In(v []string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"title": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_Title) NotIn(v []string) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"title": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_Title) Like(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Expr("title LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
 }
 
 func (c _Post_Title) NotLike(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Expr("title NOT LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
 func (c _Post_Title) Asc() PostOrderExpr {
-	return _Post_Title_OrderExpr("title")
+	return _Post_Title_OrderExpr(string(c))
 }
 
 func (c _Post_Title) Desc() PostOrderExpr {
-	return _Post_Title_OrderExpr("title DESC")
+	return _Post_Title_OrderExpr(string(c) + " DESC")
 }
 
 type _Post_Content_OrderExpr string
@@ -639,39 +675,43 @@ func (s _Post_Content_OrderExpr) PostOrderExpr() string {
 type _Post_Content string
 
 func (c _Post_Content) PostColumnExpr() string {
-	return "content"
+	return string(c)
+}
+
+func (c _Post_Content) String() string {
+	return string(c)
 }
 
 func (c _Post_Content) Eq(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"content": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_Content) NotEq(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"content": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_Content) In(v []string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Eq{"content": v}}
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
 func (c _Post_Content) NotIn(v []string) PostSqlizer {
-	return &_PostSqlizer{squirrel.NotEq{"content": v}}
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
 func (c _Post_Content) Like(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Expr("content LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
 }
 
 func (c _Post_Content) NotLike(v string) PostSqlizer {
-	return &_PostSqlizer{squirrel.Expr("content NOT LIKE ?", v)}
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
 func (c _Post_Content) Asc() PostOrderExpr {
-	return _Post_Content_OrderExpr("content")
+	return _Post_Content_OrderExpr(string(c))
 }
 
 func (c _Post_Content) Desc() PostOrderExpr {
-	return _Post_Content_OrderExpr("content DESC")
+	return _Post_Content_OrderExpr(string(c) + " DESC")
 }
 
 type PostDBSet struct {
