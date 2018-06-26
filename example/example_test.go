@@ -132,3 +132,17 @@ func Example() {
 		}
 	}
 }
+
+func Example_generatedSchemaFields() {
+	dbc := NewDBContext("sqlite3", nil)
+
+	// Output:
+	// dbc.Blog.String() = "blogs"
+	// dbc.Blog.BlogID = "blog_id"
+	// dbc.Blog.Name = "name"
+	// dbc.Blog.Author = "author"
+	fmt.Printf("dbc.Blog.String() = %q\n", dbc.Blog.String())
+	fmt.Printf("dbc.Blog.BlogID = %q\n", dbc.Blog.BlogID)
+	fmt.Printf("dbc.Blog.Name = %q\n", dbc.Blog.Name)
+	fmt.Printf("dbc.Blog.Author = %q\n", dbc.Blog.Author)
+}

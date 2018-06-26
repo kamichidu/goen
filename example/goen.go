@@ -50,11 +50,17 @@ type BlogQueryBuilder struct {
 	builder squirrel.SelectBuilder
 }
 
-func newBlogQueryBuilder(dbc *goen.DBContext, cols []string) BlogQueryBuilder {
+func newBlogQueryBuilder(dbc *goen.DBContext) BlogQueryBuilder {
 	stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
+	// for caching reason, wont support filtering columns
+	metaT := metaSchema.LoadOf(&Blog{})
+	cols := make([]string, len(metaT.Columns))
+	for i := range metaT.Columns {
+		cols[i] = metaT.Columns[i].ColumnName
+	}
 	return BlogQueryBuilder{
 		dbc:     dbc,
-		builder: stmtBuilder.Select(cols...).From("blogs"),
+		builder: stmtBuilder.Select(cols...).From(metaT.TableName),
 	}
 }
 
@@ -268,18 +274,16 @@ func newBlogDBSet(dbc *goen.DBContext) *BlogDBSet {
 	return dbset
 }
 
+func (dbset *BlogDBSet) String() string {
+	return "blogs"
+}
+
 func (dbset *BlogDBSet) Insert(v *Blog) {
 	dbset.dbc.Patch(metaSchema.InsertPatchOf(v))
 }
 
 func (dbset *BlogDBSet) Select() BlogQueryBuilder {
-	// for caching reason, wont support filtering columns
-	metaT := metaSchema.LoadOf(&Blog{})
-	cols := make([]string, len(metaT.Columns))
-	for i := range metaT.Columns {
-		cols[i] = metaT.Columns[i].ColumnName
-	}
-	return newBlogQueryBuilder(dbset.dbc, cols)
+	return newBlogQueryBuilder(dbset.dbc)
 }
 
 func (dbset *BlogDBSet) Update(v *Blog) {
@@ -401,11 +405,17 @@ type PostQueryBuilder struct {
 	builder squirrel.SelectBuilder
 }
 
-func newPostQueryBuilder(dbc *goen.DBContext, cols []string) PostQueryBuilder {
+func newPostQueryBuilder(dbc *goen.DBContext) PostQueryBuilder {
 	stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
+	// for caching reason, wont support filtering columns
+	metaT := metaSchema.LoadOf(&Post{})
+	cols := make([]string, len(metaT.Columns))
+	for i := range metaT.Columns {
+		cols[i] = metaT.Columns[i].ColumnName
+	}
 	return PostQueryBuilder{
 		dbc:     dbc,
-		builder: stmtBuilder.Select(cols...).From("posts"),
+		builder: stmtBuilder.Select(cols...).From(metaT.TableName),
 	}
 }
 
@@ -748,18 +758,16 @@ func newPostDBSet(dbc *goen.DBContext) *PostDBSet {
 	return dbset
 }
 
+func (dbset *PostDBSet) String() string {
+	return "posts"
+}
+
 func (dbset *PostDBSet) Insert(v *Post) {
 	dbset.dbc.Patch(metaSchema.InsertPatchOf(v))
 }
 
 func (dbset *PostDBSet) Select() PostQueryBuilder {
-	// for caching reason, wont support filtering columns
-	metaT := metaSchema.LoadOf(&Post{})
-	cols := make([]string, len(metaT.Columns))
-	for i := range metaT.Columns {
-		cols[i] = metaT.Columns[i].ColumnName
-	}
-	return newPostQueryBuilder(dbset.dbc, cols)
+	return newPostQueryBuilder(dbset.dbc)
 }
 
 func (dbset *PostDBSet) Update(v *Post) {
