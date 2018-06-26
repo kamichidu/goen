@@ -7,6 +7,7 @@ package example
 import (
 	"container/list"
 	"database/sql"
+	"time"
 
 	"github.com/kamichidu/goen"
 	"github.com/satori/go.uuid"
@@ -307,6 +308,8 @@ func (dbset *BlogDBSet) includePosts(later *list.List, sc *goen.ScopeCache, reco
 			cond = append(cond, rowKey)
 		}
 		query, args, err := squirrel.Select(
+			"created_at",
+			"updated_at",
 			"blog_id",
 			"post_id",
 			"title",
@@ -437,6 +440,78 @@ func (qb PostQueryBuilder) Query() ([]*Post, error) {
 	}
 
 	return records, nil
+}
+
+type _Post_CreatedAt_OrderExpr string
+
+func (s _Post_CreatedAt_OrderExpr) PostOrderExpr() string {
+	return string(s)
+}
+
+type _Post_CreatedAt string
+
+func (c _Post_CreatedAt) PostColumnExpr() string {
+	return "created_at"
+}
+
+func (c _Post_CreatedAt) Eq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Eq{"created_at": v}}
+}
+
+func (c _Post_CreatedAt) NotEq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.NotEq{"created_at": v}}
+}
+
+func (c _Post_CreatedAt) In(v []time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Eq{"created_at": v}}
+}
+
+func (c _Post_CreatedAt) NotIn(v []time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.NotEq{"created_at": v}}
+}
+
+func (c _Post_CreatedAt) Asc() PostOrderExpr {
+	return _Post_CreatedAt_OrderExpr("created_at")
+}
+
+func (c _Post_CreatedAt) Desc() PostOrderExpr {
+	return _Post_CreatedAt_OrderExpr("created_at DESC")
+}
+
+type _Post_UpdatedAt_OrderExpr string
+
+func (s _Post_UpdatedAt_OrderExpr) PostOrderExpr() string {
+	return string(s)
+}
+
+type _Post_UpdatedAt string
+
+func (c _Post_UpdatedAt) PostColumnExpr() string {
+	return "updated_at"
+}
+
+func (c _Post_UpdatedAt) Eq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Eq{"updated_at": v}}
+}
+
+func (c _Post_UpdatedAt) NotEq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.NotEq{"updated_at": v}}
+}
+
+func (c _Post_UpdatedAt) In(v []time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Eq{"updated_at": v}}
+}
+
+func (c _Post_UpdatedAt) NotIn(v []time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.NotEq{"updated_at": v}}
+}
+
+func (c _Post_UpdatedAt) Asc() PostOrderExpr {
+	return _Post_UpdatedAt_OrderExpr("updated_at")
+}
+
+func (c _Post_UpdatedAt) Desc() PostOrderExpr {
+	return _Post_UpdatedAt_OrderExpr("updated_at DESC")
 }
 
 type _Post_BlogID_OrderExpr string
@@ -602,6 +677,10 @@ func (c _Post_Content) Desc() PostOrderExpr {
 type PostDBSet struct {
 	dbc *goen.DBContext
 
+	CreatedAt _Post_CreatedAt
+
+	UpdatedAt _Post_UpdatedAt
+
 	BlogID _Post_BlogID
 
 	PostID _Post_PostID
@@ -617,6 +696,8 @@ func newPostDBSet(dbc *goen.DBContext) *PostDBSet {
 	dbset := &PostDBSet{
 		dbc: dbc,
 	}
+	dbset.CreatedAt = "created_at"
+	dbset.UpdatedAt = "updated_at"
 	dbset.BlogID = "blog_id"
 	dbset.PostID = "post_id"
 	dbset.Title = "title"

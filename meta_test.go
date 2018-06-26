@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -28,6 +29,11 @@ func mustFieldByName(typ reflect.Type, name string) reflect.StructField {
 	return v
 }
 
+type CommonFields struct {
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type Blog struct {
 	IDInt    int    `goen:"" table:"blogs" primary_key:""`
 	IDString string `primary_key:""`
@@ -41,6 +47,7 @@ type Post struct {
 	PostID int `goen:"" table:"posts"`
 	BlogID string
 	Blog   *Blog `foreign_key:"blog_id:id_string"`
+	CommonFields
 }
 
 func TestMetadataMap(t *testing.T) {

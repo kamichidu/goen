@@ -2,6 +2,7 @@ package generator
 
 import (
 	"go/ast"
+	"log"
 	"reflect"
 	"strings"
 
@@ -50,10 +51,28 @@ func (astrct *aStruct) Name() string {
 }
 
 func (astrct *aStruct) Fields() []*aStructField {
+	return astrct.fieldsOf(astrct)
+}
+
+func (astrct *aStruct) fieldsOf(curr *aStruct) []*aStructField {
 	fields := []*aStructField{}
-	for _, field := range astrct.strct.Fields.List {
-		for _, name := range field.Names {
-			fields = append(fields, &aStructField{astrct, field, name})
+	for _, field := range curr.strct.Fields.List {
+		if field.Names == nil {
+			// anonymous field
+			embeddedTyp := resolveType(curr.file, field.Type)
+			if embeddedTyp.PkgPath != "" {
+				// external package
+				log.Printf("external type %s", embeddedTyp.TypeString())
+			} else {
+				// maybe, its decl on the same package
+				embFile, embObj := findDecl(curr.pkg, embeddedTyp.Name)
+				embedded := newAStructFromObject(curr.pkg, embFile, embObj)
+				fields = append(fields, curr.fieldsOf(embedded)...)
+			}
+		} else {
+			for _, name := range field.Names {
+				fields = append(fields, &aStructField{curr, field, name})
+			}
 		}
 	}
 	return fields

@@ -2,6 +2,7 @@ package example
 
 import (
 	"github.com/satori/go.uuid"
+	"time"
 )
 
 //go:generate goen -o goen.go
@@ -16,6 +17,8 @@ type Blog struct {
 }
 
 type Post struct {
+	Timestamp
+
 	BlogID uuid.UUID `goen:"" table:"posts"`
 
 	PostID int `primary_key:",omitempty"`
@@ -25,4 +28,9 @@ type Post struct {
 	Content string
 
 	Blog *Blog `foreign_key:"blog_id"`
+}
+
+type Timestamp struct {
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

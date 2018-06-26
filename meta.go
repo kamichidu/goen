@@ -208,28 +208,28 @@ func (m *MetaSchema) Compute() {
 }
 
 func (m *MetaSchema) computeOf(typ reflect.Type) *metaTable {
+	fields := m.structFieldsOf(typ)
 	metaT := &metaTable{
 		Typ: typ,
 	}
-	for i := 0; i < typ.NumField(); i++ {
-		sf := typ.Field(i)
-		if _, ok := internal.FirstLookup(sf.Tag, internal.TagTable, internal.TagView); ok {
-			spec := internal.TableSpec(sf.Tag)
+	for _, field := range fields {
+		if _, ok := internal.FirstLookup(field.Tag, internal.TagTable, internal.TagView); ok {
+			spec := internal.TableSpec(field.Tag)
 			metaT.TableName = spec.Name()
-		} else if _, ok := sf.Tag.Lookup(internal.TagIgnore); ok {
+		} else if _, ok := field.Tag.Lookup(internal.TagIgnore); ok {
 			continue
 		}
 
-		_, partOfPrimaryKey := sf.Tag.Lookup(internal.TagPrimaryKey)
+		_, partOfPrimaryKey := field.Tag.Lookup(internal.TagPrimaryKey)
 
-		spec := internal.ColumnSpec(sf.Tag)
+		spec := internal.ColumnSpec(field.Tag)
 		metaC := &metaColumn{
-			Field:            sf,
+			Field:            field,
 			OmitEmpty:        spec.OmitEmpty(),
 			PartOfPrimaryKey: partOfPrimaryKey,
-			ColumnName:       internal.FirstNotEmpty(spec.Name(), strcase.SnakeCase(sf.Name)),
+			ColumnName:       internal.FirstNotEmpty(spec.Name(), strcase.SnakeCase(field.Name)),
 		}
-		if _, refeField := sf.Tag.Lookup(internal.TagForeignKey); !refeField {
+		if _, refeField := field.Tag.Lookup(internal.TagForeignKey); !refeField {
 			metaT.Columns = append(metaT.Columns, metaC)
 		}
 		if partOfPrimaryKey {
@@ -240,28 +240,50 @@ func (m *MetaSchema) computeOf(typ reflect.Type) *metaTable {
 	return metaT
 }
 
+func (m *MetaSchema) structFieldsOf(typ reflect.Type) []reflect.StructField {
+	if typ.Kind() != reflect.Struct {
+		panic(fmt.Sprintf("goen: only accepts struct type, but got %q", typ))
+	}
+
+	fields := []reflect.StructField{}
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		if field.Anonymous {
+			embeddedTyp := field.Type
+			for embeddedTyp.Kind() == reflect.Ptr {
+				embeddedTyp = embeddedTyp.Elem()
+			}
+			// only support embedded struct
+			if embeddedTyp.Kind() == reflect.Struct {
+				fields = append(fields, m.structFieldsOf(embeddedTyp)...)
+			}
+		} else {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
 func (m *MetaSchema) computeReferenceKeysOf(typ reflect.Type) [][]*metaColumn {
 	var keys [][]*metaColumn
 	for _, refeTyp := range m.typlist {
 		var key []*metaColumn
-		for i := 0; i < refeTyp.NumField(); i++ {
-			sf := refeTyp.Field(i)
-			ftyp := sf.Type
+		for _, refeField := range m.structFieldsOf(refeTyp) {
+			ftyp := refeField.Type
 			for ftyp.Kind() == reflect.Ptr || ftyp.Kind() == reflect.Slice {
 				ftyp = ftyp.Elem()
 			}
-			if _, ok := sf.Tag.Lookup(internal.TagForeignKey); !ok {
+			if _, ok := refeField.Tag.Lookup(internal.TagForeignKey); !ok {
 				// not a reference
 				continue
 			} else if ftyp != typ {
 				// not a reference
 				continue
 			}
-			spec := internal.ForeignKeySpec(sf.Tag)
+			spec := internal.ForeignKeySpec(refeField.Tag)
 			// child key is typ's key
 			for _, childKey := range spec.ChildKey() {
-				for j := 0; j < typ.NumField(); j++ {
-					childField := typ.Field(j)
+				for _, childField := range m.structFieldsOf(typ) {
 					if _, ok := childField.Tag.Lookup(internal.TagIgnore); ok {
 						continue
 					}

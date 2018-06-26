@@ -3,6 +3,7 @@ package example
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	_ "github.com/kamichidu/goen/dialect/sqlite3"
@@ -24,6 +25,8 @@ create table posts (
 	post_id integer not null primary key,
 	title varchar,
 	content varchar,
+	created_at datetime,
+	updated_at datetime,
 	-- primary key(blog_id, post_id),
 	foreign key (blog_id) references blogs(blog_id)
 );
@@ -67,15 +70,27 @@ func Example() {
 		dbc.Blog.Insert(blog)
 	}
 	func(blog *Blog) {
+		now, err := time.Parse(time.RFC3339, "2018-06-01T12:00:00Z")
+		if err != nil {
+			panic(err)
+		}
 		dbc.Post.Insert(&Post{
 			BlogID:  blog.BlogID,
 			Title:   "titleA",
 			Content: "contentA",
+			Timestamp: Timestamp{
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
 		})
 		dbc.Post.Insert(&Post{
 			BlogID:  blog.BlogID,
 			Title:   "titleB",
 			Content: "contentB",
+			Timestamp: Timestamp{
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
 		})
 	}(src[0])
 	src[1].Author = "unknown"
@@ -88,8 +103,12 @@ func Example() {
 	// Output:
 	// blogs = 3
 	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
-	// - (*example.Post){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
-	// - (*example.Post){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
+	//   CreatedAt:"2018-06-01T12:00:00Z"
+	//   UpdatedAt:"2018-06-01T12:00:00Z"
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
+	//   CreatedAt:"2018-06-01T12:00:00Z"
+	//   UpdatedAt:"2018-06-01T12:00:00Z"
 	// (*example.Blog){BlogID:(uuid.UUID)b95e5d4d-7eb9-4612-882d-224daa4a59ee Name:(string)testing2 Author:(string)unknown Posts:([]*example.Post)<nil>}
 	// (*example.Blog){BlogID:(uuid.UUID)065c6554-9aff-4b42-ab3b-141ed5ef5624 Name:(string)testing4 Author:(string)kamichidu Posts:([]*example.Post)<nil>}
 	blogs, err := dbc.Blog.Select().
@@ -108,6 +127,8 @@ func Example() {
 
 		for _, post := range blog.Posts {
 			spew.Printf("- %#v\n", post)
+			spew.Printf("  CreatedAt:%q\n", post.Timestamp.CreatedAt.Format(time.RFC3339))
+			spew.Printf("  UpdatedAt:%q\n", post.Timestamp.UpdatedAt.Format(time.RFC3339))
 		}
 	}
 }
