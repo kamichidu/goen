@@ -91,4 +91,4 @@ Let's review the rules and conventions for entity fields:
 - [x] transaction support
 - [x] entity caching
 - [x] able to output a generated file to an another directory
-- [ ] embedded struct support
+- [x] embedded struct support
