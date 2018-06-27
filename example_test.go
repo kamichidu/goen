@@ -39,13 +39,13 @@ func Example_bulkOperation() {
 			[]interface{}{fmt.Sprintf("name-%d", i)},
 		))
 	}
-	// Output:
-	// goen: "INSERT INTO testing (name) VALUES (?),(?),(?)" with [name-0 name-1 name-2]
 	dbc.DebugMode(true)
 	dbc.Logger = log.New(os.Stdout, "", 0)
 	if err := dbc.SaveChanges(); err != nil {
 		panic(err)
 	}
+	// Output:
+	// goen: "INSERT INTO testing (name) VALUES (?),(?),(?)" with [name-0 name-1 name-2]
 }
 
 func Example_queryCount() {
@@ -76,12 +76,6 @@ func Example_queryCount() {
 		panic(err)
 	}
 
-	// Output:
-	// dbc founds 3 records
-	// records:
-	// id=1 name="name-0"
-	// id=2 name="name-1"
-	// id=3 name="name-2"
 	row := dbc.QueryRow(`select count(*) from testing`)
 
 	var count int64
@@ -105,6 +99,12 @@ func Example_queryCount() {
 	for _, record := range records {
 		fmt.Printf("id=%d name=%q\n", record["id"], record["name"])
 	}
+	// Output:
+	// dbc founds 3 records
+	// records:
+	// id=1 name="name-0"
+	// id=2 name="name-1"
+	// id=3 name="name-2"
 }
 
 func Example_transaction() {
@@ -139,11 +139,6 @@ func Example_transaction() {
 		panic(err)
 	}
 
-	// Output:
-	// dbc founds 0 records when not committed yet
-	// txc founds 1 records when not committed yet since it's same transaction
-	// dbc founds 1 records after committed
-	// txc returns error after committed: "sql: statement is closed"
 	func() {
 		rows, err := dbc.Query(`select * from testing`)
 		if err != nil {
@@ -192,4 +187,9 @@ func Example_transaction() {
 		_, err := txc.Query(`select * from testing`)
 		fmt.Printf("txc returns error after committed: %q\n", err)
 	}()
+	// Output:
+	// dbc founds 0 records when not committed yet
+	// txc founds 1 records when not committed yet since it's same transaction
+	// dbc founds 1 records after committed
+	// txc returns error after committed: "sql: statement is closed"
 }

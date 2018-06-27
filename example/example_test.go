@@ -100,17 +100,6 @@ func Example() {
 		panic(err)
 	}
 
-	// Output:
-	// blogs = 3
-	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
-	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
-	//   CreatedAt:"2018-06-01T12:00:00Z"
-	//   UpdatedAt:"2018-06-01T12:00:00Z"
-	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
-	//   CreatedAt:"2018-06-01T12:00:00Z"
-	//   UpdatedAt:"2018-06-01T12:00:00Z"
-	// (*example.Blog){BlogID:(uuid.UUID)b95e5d4d-7eb9-4612-882d-224daa4a59ee Name:(string)testing2 Author:(string)unknown Posts:([]*example.Post)<nil>}
-	// (*example.Blog){BlogID:(uuid.UUID)065c6554-9aff-4b42-ab3b-141ed5ef5624 Name:(string)testing4 Author:(string)kamichidu Posts:([]*example.Post)<nil>}
 	blogs, err := dbc.Blog.Select().
 		Include(dbc.Blog.IncludePosts, dbc.Post.IncludeBlog).
 		Where(dbc.Blog.Name.Like(`%testing%`)).
@@ -131,18 +120,29 @@ func Example() {
 			spew.Printf("  UpdatedAt:%q\n", post.Timestamp.UpdatedAt.Format(time.RFC3339))
 		}
 	}
+	// Output:
+	// blogs = 3
+	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
+	//   CreatedAt:"2018-06-01T12:00:00Z"
+	//   UpdatedAt:"2018-06-01T12:00:00Z"
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
+	//   CreatedAt:"2018-06-01T12:00:00Z"
+	//   UpdatedAt:"2018-06-01T12:00:00Z"
+	// (*example.Blog){BlogID:(uuid.UUID)b95e5d4d-7eb9-4612-882d-224daa4a59ee Name:(string)testing2 Author:(string)unknown Posts:([]*example.Post)<nil>}
+	// (*example.Blog){BlogID:(uuid.UUID)065c6554-9aff-4b42-ab3b-141ed5ef5624 Name:(string)testing4 Author:(string)kamichidu Posts:([]*example.Post)<nil>}
 }
 
 func Example_generatedSchemaFields() {
 	dbc := NewDBContext("sqlite3", nil)
 
+	fmt.Printf("dbc.Blog.String() = %q\n", dbc.Blog.String())
+	fmt.Printf("dbc.Blog.BlogID = %q\n", dbc.Blog.BlogID)
+	fmt.Printf("dbc.Blog.Name = %q\n", dbc.Blog.Name)
+	fmt.Printf("dbc.Blog.Author = %q\n", dbc.Blog.Author)
 	// Output:
 	// dbc.Blog.String() = "blogs"
 	// dbc.Blog.BlogID = "blog_id"
 	// dbc.Blog.Name = "name"
 	// dbc.Blog.Author = "author"
-	fmt.Printf("dbc.Blog.String() = %q\n", dbc.Blog.String())
-	fmt.Printf("dbc.Blog.BlogID = %q\n", dbc.Blog.BlogID)
-	fmt.Printf("dbc.Blog.Name = %q\n", dbc.Blog.Name)
-	fmt.Printf("dbc.Blog.Author = %q\n", dbc.Blog.Author)
 }
