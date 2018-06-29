@@ -104,6 +104,20 @@ func (qb BlogQueryBuilder) OrderBy(orderBys ...BlogOrderExpr) BlogQueryBuilder {
 	return qb
 }
 
+func (qb BlogQueryBuilder) Count() (int64, error) {
+	query, args, err := qb.builder.Columns("count(*)").ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var count int64
+	row := qb.dbc.QueryRow(query, args...)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (qb BlogQueryBuilder) Query() ([]*Blog, error) {
 	query, args, err := qb.builder.ToSql()
 	if err != nil {
@@ -508,6 +522,20 @@ func (qb PostQueryBuilder) OrderBy(orderBys ...PostOrderExpr) PostQueryBuilder {
 	}
 	qb.builder = qb.builder.OrderBy(exprs...)
 	return qb
+}
+
+func (qb PostQueryBuilder) Count() (int64, error) {
+	query, args, err := qb.builder.Columns("count(*)").ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var count int64
+	row := qb.dbc.QueryRow(query, args...)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (qb PostQueryBuilder) Query() ([]*Post, error) {
