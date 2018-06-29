@@ -21,6 +21,8 @@ func init() {
 }
 
 type BlogSqlizer interface {
+	squirrel.Sqlizer
+
 	BlogToSql() (string, []interface{}, error)
 }
 
@@ -70,6 +72,13 @@ func (qb BlogQueryBuilder) Include(loaders ...goen.IncludeLoader) BlogQueryBuild
 }
 
 func (qb BlogQueryBuilder) Where(conds ...BlogSqlizer) BlogQueryBuilder {
+	for _, cond := range conds {
+		qb.builder = qb.builder.Where(cond)
+	}
+	return qb
+}
+
+func (qb BlogQueryBuilder) WhereRaw(conds ...squirrel.Sqlizer) BlogQueryBuilder {
 	for _, cond := range conds {
 		qb.builder = qb.builder.Where(cond)
 	}
@@ -376,6 +385,8 @@ func init() {
 }
 
 type PostSqlizer interface {
+	squirrel.Sqlizer
+
 	PostToSql() (string, []interface{}, error)
 }
 
@@ -425,6 +436,13 @@ func (qb PostQueryBuilder) Include(loaders ...goen.IncludeLoader) PostQueryBuild
 }
 
 func (qb PostQueryBuilder) Where(conds ...PostSqlizer) PostQueryBuilder {
+	for _, cond := range conds {
+		qb.builder = qb.builder.Where(cond)
+	}
+	return qb
+}
+
+func (qb PostQueryBuilder) WhereRaw(conds ...squirrel.Sqlizer) PostQueryBuilder {
 	for _, cond := range conds {
 		qb.builder = qb.builder.Where(cond)
 	}

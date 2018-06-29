@@ -9,6 +9,8 @@ func init() {
 }
 
 type {{ $sqlizerType }} interface {
+    squirrel.Sqlizer
+
     {{ $.Entity }}ToSql() (string, []interface{}, error)
 }
 
@@ -58,6 +60,13 @@ func (qb {{ $queryType }}) Include(loaders ...goen.IncludeLoader) {{ $queryType 
 }
 
 func (qb {{ $queryType }}) Where(conds ...{{ $sqlizerType }}) {{ $queryType }} {
+    for _, cond := range conds {
+        qb.builder = qb.builder.Where(cond)
+    }
+    return qb
+}
+
+func (qb {{ $queryType }}) WhereRaw(conds ...squirrel.Sqlizer) {{ $queryType }} {
     for _, cond := range conds {
         qb.builder = qb.builder.Where(cond)
     }
