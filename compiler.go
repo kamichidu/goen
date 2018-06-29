@@ -1,7 +1,6 @@
 package goen
 
 import (
-	"container/list"
 	sqr "gopkg.in/Masterminds/squirrel.v1"
 )
 
@@ -14,23 +13,23 @@ var (
 type CompilerOptions struct {
 	StmtBuilder sqr.StatementBuilderType
 
-	Patches *list.List
+	Patches *PatchList
 }
 
 type PatchCompiler interface {
-	Compile(*CompilerOptions) *list.List
+	Compile(*CompilerOptions) *SqlizerList
 }
 
-type PatchCompilerFunc func(*CompilerOptions) *list.List
+type PatchCompilerFunc func(*CompilerOptions) *SqlizerList
 
-func (fn PatchCompilerFunc) Compile(opts *CompilerOptions) (sqlizers *list.List) {
+func (fn PatchCompilerFunc) Compile(opts *CompilerOptions) (sqlizers *SqlizerList) {
 	return fn(opts)
 }
 
-func compilePatch(opts *CompilerOptions) (sqlizers *list.List) {
-	sqlizers = list.New()
+func compilePatch(opts *CompilerOptions) (sqlizers *SqlizerList) {
+	sqlizers = NewSqlizerList()
 	for curr := opts.Patches.Front(); curr != nil; curr = curr.Next() {
-		patch := curr.Value.(*Patch)
+		patch := curr.GetValue()
 		if len(patch.Columns) != len(patch.Values) {
 			panic("goen: number of columns and values are mismatched")
 		}
@@ -63,7 +62,7 @@ func compilePatch(opts *CompilerOptions) (sqlizers *list.List) {
 	return sqlizers
 }
 
-func compileBulkInsert(opts *CompilerOptions) (sqlizers *list.List) {
+func compileBulkInsert(opts *CompilerOptions) (sqlizers *SqlizerList) {
 	var lastPatch *Patch
 	compatLastPatch := func(patch *Patch) bool {
 		if lastPatch == nil {
@@ -83,7 +82,7 @@ func compileBulkInsert(opts *CompilerOptions) (sqlizers *list.List) {
 		}
 		return true
 	}
-	fallback := func(patches *list.List) *list.List {
+	fallback := func(patches *PatchList) *SqlizerList {
 		opts := &CompilerOptions{
 			StmtBuilder: opts.StmtBuilder,
 			Patches:     patches,
@@ -91,14 +90,14 @@ func compileBulkInsert(opts *CompilerOptions) (sqlizers *list.List) {
 		return DefaultCompiler.Compile(opts)
 	}
 
-	sqlizers = list.New()
+	sqlizers = NewSqlizerList()
 	var (
-		buffer         = list.New()
+		buffer         = NewPatchList()
 		bulkInsertStmt sqr.InsertBuilder
 		fresh          = true
 	)
 	for curr := opts.Patches.Front(); curr != nil; curr = curr.Next() {
-		patch := curr.Value.(*Patch)
+		patch := curr.GetValue()
 		if len(patch.Columns) != len(patch.Values) {
 			panic("goen: number of columns and values are mismatched")
 		}
@@ -131,7 +130,7 @@ func compileBulkInsert(opts *CompilerOptions) (sqlizers *list.List) {
 	}
 	// last patch is insert, then buffer must be empty
 	if buffer.Len() > 0 {
-		sqlizers.PushBackList(buffer)
+		sqlizers.PushBackList(fallback(buffer))
 		buffer.Init()
 	}
 	if !fresh {

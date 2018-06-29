@@ -1,7 +1,6 @@
 package goen
 
 import (
-	"container/list"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,14 +8,14 @@ import (
 )
 
 func TestPatchCompilerFunc(t *testing.T) {
-	assert.Implements(t, (*PatchCompiler)(nil), PatchCompilerFunc(func(opts *CompilerOptions) *list.List {
-		return list.New()
+	assert.Implements(t, (*PatchCompiler)(nil), PatchCompilerFunc(func(opts *CompilerOptions) *SqlizerList {
+		return NewSqlizerList()
 	}))
 }
 
 func TestBulkInsertCompiler(t *testing.T) {
 	t.Run("SimpleCase", func(t *testing.T) {
-		patches := list.New()
+		patches := NewPatchList()
 		patches.PushBack(&Patch{
 			Kind:      PatchInsert,
 			TableName: "testing",
@@ -43,14 +42,14 @@ func TestBulkInsertCompiler(t *testing.T) {
 			return
 		}
 
-		sqlizer := sqlizers.Front().Value.(sqr.Sqlizer)
+		sqlizer := sqlizers.Front().GetValue()
 		query, args, err := sqlizer.ToSql()
 		assert.NoError(t, err)
 		assert.Equal(t, `INSERT INTO testing (id,name) VALUES (?,?),(?,?),(?,?)`, query)
 		assert.Equal(t, []interface{}{1, "a", 2, "b", 3, "c"}, args)
 	})
 	t.Run("ComplexCase", func(t *testing.T) {
-		patches := list.New()
+		patches := NewPatchList()
 		patches.PushBack(&Patch{
 			Kind:      PatchInsert,
 			TableName: "testing",
@@ -88,7 +87,7 @@ func TestBulkInsertCompiler(t *testing.T) {
 		if !assert.Equal(t, 3, sqlizers.Len()) {
 			t.Log("Got sqlizers:")
 			for curr := sqlizers.Front(); curr != nil; curr = curr.Next() {
-				query, args, err := curr.Value.(sqr.Sqlizer).ToSql()
+				query, args, err := curr.GetValue().ToSql()
 				if err == nil {
 					t.Logf("%q with %v", query, args)
 				} else {
@@ -99,7 +98,7 @@ func TestBulkInsertCompiler(t *testing.T) {
 		}
 		curr := sqlizers.Front()
 
-		sqlizer := curr.Value.(sqr.Sqlizer)
+		sqlizer := curr.GetValue()
 		curr = curr.Next()
 		query, args, err := sqlizer.ToSql()
 		if assert.NoError(t, err) {
@@ -107,7 +106,7 @@ func TestBulkInsertCompiler(t *testing.T) {
 			assert.Equal(t, []interface{}{1, "a", 2, "b"}, args)
 		}
 
-		sqlizer = curr.Value.(sqr.Sqlizer)
+		sqlizer = curr.GetValue()
 		curr = curr.Next()
 		query, args, err = sqlizer.ToSql()
 		if assert.NoError(t, err) {
@@ -115,7 +114,7 @@ func TestBulkInsertCompiler(t *testing.T) {
 			assert.Equal(t, []interface{}{"c", 1}, args)
 		}
 
-		sqlizer = curr.Value.(sqr.Sqlizer)
+		sqlizer = curr.GetValue()
 		curr = curr.Next()
 		query, args, err = sqlizer.ToSql()
 		if assert.NoError(t, err) {

@@ -25,7 +25,7 @@ type DBContext struct {
 
 	debug bool
 
-	patchBuffer *list.List
+	patchBuffer *PatchList
 
 	stmtBuilder sqr.StatementBuilderType
 
@@ -42,7 +42,7 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 	return &DBContext{
 		DB:          db,
 		dialect:     dialect,
-		patchBuffer: list.New(),
+		patchBuffer: NewPatchList(),
 		stmtBuilder: sqr.StatementBuilder.PlaceholderFormat(dialect.PlaceholderFormat()),
 		stmtCacher:  sqr.NewStmtCacher(db),
 	}
@@ -62,7 +62,7 @@ func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
 		DB:          dbc.DB,
 		dialect:     dbc.dialect,
 		debug:       dbc.debug,
-		patchBuffer: list.New(),
+		patchBuffer: NewPatchList(),
 		stmtBuilder: dbc.stmtBuilder,
 		stmtCacher:  sqr.NewStmtCacher(tx),
 	}
@@ -195,7 +195,7 @@ func (dbc *DBContext) scanRow(rows sqr.RowScanner, cols []*sql.ColumnType, rowTy
 	}
 }
 
-func (dbc *DBContext) CompilePatch() *list.List {
+func (dbc *DBContext) CompilePatch() *SqlizerList {
 	patches := *dbc.patchBuffer
 	dbc.patchBuffer.Init()
 	compiler := dbc.Compiler
@@ -216,7 +216,7 @@ func (dbc *DBContext) SaveChanges() error {
 func (dbc *DBContext) SaveChangesContext(ctx context.Context) error {
 	sqlizers := dbc.CompilePatch()
 	for curr := sqlizers.Front(); curr != nil; curr = curr.Next() {
-		sqlizer := curr.Value.(sqr.Sqlizer)
+		sqlizer := curr.GetValue()
 		query, args, err := sqlizer.ToSql()
 		if err != nil {
 			return err
