@@ -73,6 +73,16 @@ func (qb {{ $queryType }}) WhereRaw(conds ...squirrel.Sqlizer) {{ $queryType }} 
     return qb
 }
 
+func (qb {{ $queryType }}) Offset(offset uint64) {{ $queryType }} {
+    qb.builder = qb.builder.Offset(offset)
+    return qb
+}
+
+func (qb {{ $queryType }}) Limit(limit uint64) {{ $queryType }} {
+    qb.builder = qb.builder.Limit(limit)
+    return qb
+}
+
 func (qb {{ $queryType }}) OrderBy(orderBys ...{{ $orderType }}) {{ $queryType }} {
     exprs := make([]string, len(orderBys))
     for i := range orderBys {
@@ -108,6 +118,38 @@ func (qb {{ $queryType }}) Query() ([]*{{ $.Entity }}, error) {
     }
 
     return records, nil
+}
+
+func (qb {{ $queryType }}) QueryRow() (*{{ $.Entity }}, error) {
+    query, args, err := qb.Limit(1).builder.ToSql()
+    if err != nil {
+        return nil, err
+    }
+    rows, err := qb.dbc.Query(query, args...)
+    if err != nil {
+        return nil, err
+    }
+
+    var records []*{{ $.Entity }}
+    if err := qb.dbc.Scan(rows, &records); err != nil {
+        rows.Close()
+        return nil, err
+    }
+    rows.Close()
+
+    sc := goen.NewScopeCache(metaSchema)
+    for _, record := range records {
+        sc.AddObject(record)
+    }
+    if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+        return nil, err
+    }
+
+    if len(records) == 0 {
+        return nil, sql.ErrNoRows
+    } else {
+        return records[0], nil
+    }
 }
 
 {{ range $column := $.Columns }}

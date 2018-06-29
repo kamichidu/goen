@@ -85,6 +85,16 @@ func (qb BlogQueryBuilder) WhereRaw(conds ...squirrel.Sqlizer) BlogQueryBuilder 
 	return qb
 }
 
+func (qb BlogQueryBuilder) Offset(offset uint64) BlogQueryBuilder {
+	qb.builder = qb.builder.Offset(offset)
+	return qb
+}
+
+func (qb BlogQueryBuilder) Limit(limit uint64) BlogQueryBuilder {
+	qb.builder = qb.builder.Limit(limit)
+	return qb
+}
+
 func (qb BlogQueryBuilder) OrderBy(orderBys ...BlogOrderExpr) BlogQueryBuilder {
 	exprs := make([]string, len(orderBys))
 	for i := range orderBys {
@@ -120,6 +130,38 @@ func (qb BlogQueryBuilder) Query() ([]*Blog, error) {
 	}
 
 	return records, nil
+}
+
+func (qb BlogQueryBuilder) QueryRow() (*Blog, error) {
+	query, args, err := qb.Limit(1).builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := qb.dbc.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	var records []*Blog
+	if err := qb.dbc.Scan(rows, &records); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	sc := goen.NewScopeCache(metaSchema)
+	for _, record := range records {
+		sc.AddObject(record)
+	}
+	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+		return nil, err
+	}
+
+	if len(records) == 0 {
+		return nil, sql.ErrNoRows
+	} else {
+		return records[0], nil
+	}
 }
 
 type _Blog_BlogID_OrderExpr string
@@ -449,6 +491,16 @@ func (qb PostQueryBuilder) WhereRaw(conds ...squirrel.Sqlizer) PostQueryBuilder 
 	return qb
 }
 
+func (qb PostQueryBuilder) Offset(offset uint64) PostQueryBuilder {
+	qb.builder = qb.builder.Offset(offset)
+	return qb
+}
+
+func (qb PostQueryBuilder) Limit(limit uint64) PostQueryBuilder {
+	qb.builder = qb.builder.Limit(limit)
+	return qb
+}
+
 func (qb PostQueryBuilder) OrderBy(orderBys ...PostOrderExpr) PostQueryBuilder {
 	exprs := make([]string, len(orderBys))
 	for i := range orderBys {
@@ -484,6 +536,38 @@ func (qb PostQueryBuilder) Query() ([]*Post, error) {
 	}
 
 	return records, nil
+}
+
+func (qb PostQueryBuilder) QueryRow() (*Post, error) {
+	query, args, err := qb.Limit(1).builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := qb.dbc.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	var records []*Post
+	if err := qb.dbc.Scan(rows, &records); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	sc := goen.NewScopeCache(metaSchema)
+	for _, record := range records {
+		sc.AddObject(record)
+	}
+	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+		return nil, err
+	}
+
+	if len(records) == 0 {
+		return nil, sql.ErrNoRows
+	} else {
+		return records[0], nil
+	}
 }
 
 type _Post_CreatedAt_OrderExpr string
