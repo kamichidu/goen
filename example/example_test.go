@@ -204,6 +204,14 @@ func Example_queryRow() {
 		panic(err)
 	}
 
+	// when a record was not found, will get sql.ErrNoRows
+	_, err := dbc.Blog.Select().
+		Where(dbc.Blog.Author.Eq("non-exists-author")).
+		QueryRow()
+	if err == sql.ErrNoRows {
+		fmt.Print("QueryRow returns sql.ErrNoRows when a record was not found.\n")
+	}
+
 	// querying a record with conditions
 	blog, err := dbc.Blog.Select().
 		Include(dbc.Blog.IncludePosts, dbc.Post.IncludeBlog).
@@ -221,6 +229,7 @@ func Example_queryRow() {
 		spew.Printf("  UpdatedAt:%q\n", post.Timestamp.UpdatedAt.Format(time.RFC3339))
 	}
 	// Output:
+	// QueryRow returns sql.ErrNoRows when a record was not found.
 	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
 	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
