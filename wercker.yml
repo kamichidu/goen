@@ -69,4 +69,6 @@ build:
                   fi
               done
           done
-          goveralls -service wercker -coverprofile "$coverprofile" -repotoken "$COVERALLS_TOKEN"
+          # hotfix to tell current branch to goveralls
+          GIT_BRANCH="${WERCKER_GIT_BRANCH}" \
+            goveralls -service wercker -coverprofile "$coverprofile" -repotoken "$COVERALLS_TOKEN"
