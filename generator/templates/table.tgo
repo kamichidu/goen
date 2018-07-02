@@ -312,7 +312,8 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc 
         for _, rowKey := range noCachedChildRowKeys {
             cond = append(cond, rowKey)
         }
-        query, args, err := squirrel.Select(
+        stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbset.dbc.Dialect().PlaceholderFormat())
+        query, args, err := stmtBuilder.Select(
             {{ range $name := $rel.ColumnNames -}}
             "{{ $name }}",
             {{ end -}}
@@ -395,7 +396,8 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc 
         for _, rowKey := range noCachedChildRowKeys {
             cond = append(cond, rowKey)
         }
-        query, args, err := squirrel.Select(
+        stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbset.dbc.Dialect().PlaceholderFormat())
+        query, args, err := stmtBuilder.Select(
             {{ range $name := $rel.ColumnNames -}}
             "{{ $name }}",
             {{ end -}}

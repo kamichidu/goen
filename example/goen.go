@@ -376,7 +376,8 @@ func (dbset *BlogDBSet) includePosts(later *list.List, sc *goen.ScopeCache, reco
 		for _, rowKey := range noCachedChildRowKeys {
 			cond = append(cond, rowKey)
 		}
-		query, args, err := squirrel.Select(
+		stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbset.dbc.Dialect().PlaceholderFormat())
+		query, args, err := stmtBuilder.Select(
 			"created_at",
 			"updated_at",
 			"blog_id",
@@ -911,7 +912,8 @@ func (dbset *PostDBSet) includeBlog(later *list.List, sc *goen.ScopeCache, recor
 		for _, rowKey := range noCachedChildRowKeys {
 			cond = append(cond, rowKey)
 		}
-		query, args, err := squirrel.Select(
+		stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbset.dbc.Dialect().PlaceholderFormat())
+		query, args, err := stmtBuilder.Select(
 			"blog_id",
 			"name",
 			"author",

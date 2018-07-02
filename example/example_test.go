@@ -7,42 +7,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kamichidu/goen"
-	_ "github.com/kamichidu/goen/dialect/sqlite3"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
 )
-
-const ddl = `
-drop table if exists blogs;
-create table blogs (
-	blog_id blob primary key,
-	name varchar,
-	author varchar(32)
-);
-
-drop table if exists posts;
-create table posts (
-	blog_id blob not null,
-	post_id integer not null primary key,
-	title varchar,
-	content varchar,
-	created_at datetime,
-	updated_at datetime,
-	-- primary key(blog_id, post_id),
-	foreign key (blog_id) references blogs(blog_id)
-);
-`
-
-func prepareDB() (string, *sql.DB) {
-	db, err := sql.Open("sqlite3", "./sqlite.db")
-	if err != nil {
-		panic(err)
-	}
-	if _, err := db.Exec(ddl); err != nil {
-		panic(err)
-	}
-	return "sqlite3", db
-}
 
 func Example() {
 	dbc := NewDBContext(prepareDB())
@@ -275,7 +241,7 @@ func Example_count() {
 }
 
 func Example_generatedSchemaFields() {
-	dbc := NewDBContext("sqlite3", nil)
+	dbc := NewDBContext(dialectName, nil)
 
 	fmt.Printf("dbc.Blog.String() = %q\n", dbc.Blog.String())
 	fmt.Printf("dbc.Blog.BlogID = %q\n", dbc.Blog.BlogID)
