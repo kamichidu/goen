@@ -42,15 +42,11 @@ type {{ $queryType }} struct {
 
 func new{{ $queryType }}(dbc *goen.DBContext) {{ $queryType }} {
     stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
-    // for caching reason, wont support filtering columns
     metaT := metaSchema.LoadOf(&{{ $.Entity }}{})
-    cols := make([]string, len(metaT.Columns))
-    for i := range metaT.Columns {
-        cols[i] = metaT.Columns[i].ColumnName
-    }
     return {{ $queryType }}{
         dbc: dbc,
-        builder: stmtBuilder.Select(cols...).From(metaT.TableName),
+        // columns provided later
+        builder: stmtBuilder.Select().From(metaT.TableName),
     }
 }
 
@@ -107,7 +103,29 @@ func (qb {{ $queryType }}) Count() (int64, error) {
 }
 
 func (qb {{ $queryType }}) Query() ([]*{{ $.Entity }}, error) {
-    query, args, err := qb.builder.ToSql()
+    return qb.query()
+}
+
+func (qb {{ $queryType }}) QueryRow() (*{{ $.Entity }}, error) {
+    qb.builder = qb.builder.Limit(1)
+    if records, err := qb.query(); err != nil {
+        return nil, err
+    } else if len(records) == 0 {
+        return nil, sql.ErrNoRows
+    } else {
+        return records[0], nil
+    }
+}
+
+func (qb {{ $queryType }}) query() ([]*{{ $.Entity }}, error) {
+    // for caching reason, wont support filtering columns
+    metaT := metaSchema.LoadOf(&{{ $.Entity }}{})
+    cols := make([]string, len(metaT.Columns))
+    for i := range metaT.Columns {
+        cols[i] = metaT.Columns[i].ColumnName
+    }
+
+    query, args, err := qb.builder.Columns(cols...).ToSql()
     if err != nil {
         return nil, err
     }
@@ -132,38 +150,6 @@ func (qb {{ $queryType }}) Query() ([]*{{ $.Entity }}, error) {
     }
 
     return records, nil
-}
-
-func (qb {{ $queryType }}) QueryRow() (*{{ $.Entity }}, error) {
-    query, args, err := qb.Limit(1).builder.ToSql()
-    if err != nil {
-        return nil, err
-    }
-    rows, err := qb.dbc.Query(query, args...)
-    if err != nil {
-        return nil, err
-    }
-
-    var records []*{{ $.Entity }}
-    if err := qb.dbc.Scan(rows, &records); err != nil {
-        rows.Close()
-        return nil, err
-    }
-    rows.Close()
-
-    sc := goen.NewScopeCache(metaSchema)
-    for _, record := range records {
-        sc.AddObject(record)
-    }
-    if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
-        return nil, err
-    }
-
-    if len(records) == 0 {
-        return nil, sql.ErrNoRows
-    } else {
-        return records[0], nil
-    }
 }
 
 {{ range $column := $.Columns }}

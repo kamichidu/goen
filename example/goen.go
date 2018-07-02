@@ -54,15 +54,11 @@ type BlogQueryBuilder struct {
 
 func newBlogQueryBuilder(dbc *goen.DBContext) BlogQueryBuilder {
 	stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
-	// for caching reason, wont support filtering columns
 	metaT := metaSchema.LoadOf(&Blog{})
-	cols := make([]string, len(metaT.Columns))
-	for i := range metaT.Columns {
-		cols[i] = metaT.Columns[i].ColumnName
-	}
 	return BlogQueryBuilder{
-		dbc:     dbc,
-		builder: stmtBuilder.Select(cols...).From(metaT.TableName),
+		dbc: dbc,
+		// columns provided later
+		builder: stmtBuilder.Select().From(metaT.TableName),
 	}
 }
 
@@ -119,7 +115,29 @@ func (qb BlogQueryBuilder) Count() (int64, error) {
 }
 
 func (qb BlogQueryBuilder) Query() ([]*Blog, error) {
-	query, args, err := qb.builder.ToSql()
+	return qb.query()
+}
+
+func (qb BlogQueryBuilder) QueryRow() (*Blog, error) {
+	qb.builder = qb.builder.Limit(1)
+	if records, err := qb.query(); err != nil {
+		return nil, err
+	} else if len(records) == 0 {
+		return nil, sql.ErrNoRows
+	} else {
+		return records[0], nil
+	}
+}
+
+func (qb BlogQueryBuilder) query() ([]*Blog, error) {
+	// for caching reason, wont support filtering columns
+	metaT := metaSchema.LoadOf(&Blog{})
+	cols := make([]string, len(metaT.Columns))
+	for i := range metaT.Columns {
+		cols[i] = metaT.Columns[i].ColumnName
+	}
+
+	query, args, err := qb.builder.Columns(cols...).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -144,38 +162,6 @@ func (qb BlogQueryBuilder) Query() ([]*Blog, error) {
 	}
 
 	return records, nil
-}
-
-func (qb BlogQueryBuilder) QueryRow() (*Blog, error) {
-	query, args, err := qb.Limit(1).builder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	rows, err := qb.dbc.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	var records []*Blog
-	if err := qb.dbc.Scan(rows, &records); err != nil {
-		rows.Close()
-		return nil, err
-	}
-	rows.Close()
-
-	sc := goen.NewScopeCache(metaSchema)
-	for _, record := range records {
-		sc.AddObject(record)
-	}
-	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
-		return nil, err
-	}
-
-	if len(records) == 0 {
-		return nil, sql.ErrNoRows
-	} else {
-		return records[0], nil
-	}
 }
 
 type _Blog_BlogID_OrderExpr string
@@ -474,15 +460,11 @@ type PostQueryBuilder struct {
 
 func newPostQueryBuilder(dbc *goen.DBContext) PostQueryBuilder {
 	stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbc.Dialect().PlaceholderFormat())
-	// for caching reason, wont support filtering columns
 	metaT := metaSchema.LoadOf(&Post{})
-	cols := make([]string, len(metaT.Columns))
-	for i := range metaT.Columns {
-		cols[i] = metaT.Columns[i].ColumnName
-	}
 	return PostQueryBuilder{
-		dbc:     dbc,
-		builder: stmtBuilder.Select(cols...).From(metaT.TableName),
+		dbc: dbc,
+		// columns provided later
+		builder: stmtBuilder.Select().From(metaT.TableName),
 	}
 }
 
@@ -539,7 +521,29 @@ func (qb PostQueryBuilder) Count() (int64, error) {
 }
 
 func (qb PostQueryBuilder) Query() ([]*Post, error) {
-	query, args, err := qb.builder.ToSql()
+	return qb.query()
+}
+
+func (qb PostQueryBuilder) QueryRow() (*Post, error) {
+	qb.builder = qb.builder.Limit(1)
+	if records, err := qb.query(); err != nil {
+		return nil, err
+	} else if len(records) == 0 {
+		return nil, sql.ErrNoRows
+	} else {
+		return records[0], nil
+	}
+}
+
+func (qb PostQueryBuilder) query() ([]*Post, error) {
+	// for caching reason, wont support filtering columns
+	metaT := metaSchema.LoadOf(&Post{})
+	cols := make([]string, len(metaT.Columns))
+	for i := range metaT.Columns {
+		cols[i] = metaT.Columns[i].ColumnName
+	}
+
+	query, args, err := qb.builder.Columns(cols...).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -564,38 +568,6 @@ func (qb PostQueryBuilder) Query() ([]*Post, error) {
 	}
 
 	return records, nil
-}
-
-func (qb PostQueryBuilder) QueryRow() (*Post, error) {
-	query, args, err := qb.Limit(1).builder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	rows, err := qb.dbc.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	var records []*Post
-	if err := qb.dbc.Scan(rows, &records); err != nil {
-		rows.Close()
-		return nil, err
-	}
-	rows.Close()
-
-	sc := goen.NewScopeCache(metaSchema)
-	for _, record := range records {
-		sc.AddObject(record)
-	}
-	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
-		return nil, err
-	}
-
-	if len(records) == 0 {
-		return nil, sql.ErrNoRows
-	} else {
-		return records[0], nil
-	}
 }
 
 type _Post_CreatedAt_OrderExpr string

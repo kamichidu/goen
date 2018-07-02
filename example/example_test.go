@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/kamichidu/goen"
 	_ "github.com/kamichidu/goen/dialect/sqlite3"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
@@ -32,7 +33,7 @@ create table posts (
 );
 `
 
-func Example() {
+func prepareDB() (string, *sql.DB) {
 	db, err := sql.Open("sqlite3", "./sqlite.db")
 	if err != nil {
 		panic(err)
@@ -40,8 +41,11 @@ func Example() {
 	if _, err := db.Exec(ddl); err != nil {
 		panic(err)
 	}
+	return "sqlite3", db
+}
 
-	dbc := NewDBContext("sqlite3", db)
+func Example() {
+	dbc := NewDBContext(prepareDB())
 	dbc.DebugMode(true)
 
 	src := []*Blog{
@@ -96,10 +100,20 @@ func Example() {
 	src[1].Author = "unknown"
 	dbc.Blog.Update(src[1])
 	dbc.Blog.Delete(src[2])
+	src[3].Name = "updating"
+	dbc.Blog.Update(src[3])
 	if err := dbc.SaveChanges(); err != nil {
 		panic(err)
 	}
 
+	// counting all records
+	numBlogs, err := dbc.Blog.Select().Count()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("all blogs = %d\n", numBlogs)
+
+	// querying with conditions
 	blogs, err := dbc.Blog.Select().
 		Include(dbc.Blog.IncludePosts, dbc.Post.IncludeBlog).
 		Where(dbc.Blog.Name.Like(`%testing%`)).
@@ -108,7 +122,7 @@ func Example() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("blogs = %d\n", len(blogs))
+	fmt.Printf("found blogs = %d\n", len(blogs))
 	spew.Config.SortKeys = true
 	spew.Config.MaxDepth = 1
 	for _, blog := range blogs {
@@ -121,7 +135,8 @@ func Example() {
 		}
 	}
 	// Output:
-	// blogs = 3
+	// all blogs = 3
+	// found blogs = 2
 	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
 	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
@@ -130,7 +145,124 @@ func Example() {
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
 	// (*example.Blog){BlogID:(uuid.UUID)b95e5d4d-7eb9-4612-882d-224daa4a59ee Name:(string)testing2 Author:(string)unknown Posts:([]*example.Post)<nil>}
-	// (*example.Blog){BlogID:(uuid.UUID)065c6554-9aff-4b42-ab3b-141ed5ef5624 Name:(string)testing4 Author:(string)kamichidu Posts:([]*example.Post)<nil>}
+}
+
+func Example_queryRow() {
+	dbc := NewDBContext(prepareDB())
+	dbc.DebugMode(true)
+
+	src := []*Blog{
+		&Blog{
+			BlogID: uuid.Must(uuid.FromString("d03bc237-eef4-4b6f-afe1-ea901357d828")),
+			Name:   "testing1",
+			Author: "kamichidu",
+		},
+		&Blog{
+			BlogID: uuid.Must(uuid.FromString("b95e5d4d-7eb9-4612-882d-224daa4a59ee")),
+			Name:   "testing2",
+			Author: "kamichidu",
+		},
+		&Blog{
+			BlogID: uuid.Must(uuid.FromString("22f931c8-ac87-4520-88e8-83fc0604b8f5")),
+			Name:   "testing3",
+			Author: "kamichidu",
+		},
+		&Blog{
+			BlogID: uuid.Must(uuid.FromString("065c6554-9aff-4b42-ab3b-141ed5ef5624")),
+			Name:   "testing4",
+			Author: "kamichidu",
+		},
+	}
+	for _, blog := range src {
+		dbc.Blog.Insert(blog)
+	}
+	func(blog *Blog) {
+		now, err := time.Parse(time.RFC3339, "2018-06-01T12:00:00Z")
+		if err != nil {
+			panic(err)
+		}
+		dbc.Post.Insert(&Post{
+			BlogID:  blog.BlogID,
+			Title:   "titleA",
+			Content: "contentA",
+			Timestamp: Timestamp{
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		})
+		dbc.Post.Insert(&Post{
+			BlogID:  blog.BlogID,
+			Title:   "titleB",
+			Content: "contentB",
+			Timestamp: Timestamp{
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		})
+	}(src[0])
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+
+	// querying a record with conditions
+	blog, err := dbc.Blog.Select().
+		Include(dbc.Blog.IncludePosts, dbc.Post.IncludeBlog).
+		Where(dbc.Blog.Name.Eq(`testing1`)).
+		QueryRow()
+	if err != nil {
+		panic(err)
+	}
+	spew.Config.SortKeys = true
+	spew.Config.MaxDepth = 1
+	spew.Printf("%#v\n", blog)
+	for _, post := range blog.Posts {
+		spew.Printf("- %#v\n", post)
+		spew.Printf("  CreatedAt:%q\n", post.Timestamp.CreatedAt.Format(time.RFC3339))
+		spew.Printf("  UpdatedAt:%q\n", post.Timestamp.UpdatedAt.Format(time.RFC3339))
+	}
+	// Output:
+	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
+	//   CreatedAt:"2018-06-01T12:00:00Z"
+	//   UpdatedAt:"2018-06-01T12:00:00Z"
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
+	//   CreatedAt:"2018-06-01T12:00:00Z"
+	//   UpdatedAt:"2018-06-01T12:00:00Z"
+}
+
+func Example_count() {
+	dbc := NewDBContext(prepareDB())
+	dbc.DebugMode(true)
+
+	for i := 0; i < 11; i++ {
+		dbc.Blog.Insert(&Blog{
+			BlogID: uuid.Must(uuid.NewV4()),
+			Name:   fmt.Sprintf("name-%d", i),
+			Author: "kamichidu",
+		})
+	}
+
+	dbc.Compiler = goen.BulkInsertCompiler
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+
+	// counting a record with conditions
+	count, err := dbc.Blog.Select().
+		Where(dbc.Blog.Name.In([]string{
+			`name-3`,
+			`name-4`,
+			`name-5`,
+			`name-6`,
+			`name-7`,
+		})).
+		Count()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("count = %d\n", count)
+	// Output:
+	// count = 5
 }
 
 func Example_generatedSchemaFields() {
