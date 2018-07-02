@@ -69,4 +69,4 @@ build:
                   fi
               done
           done
-          goveralls -service wercker -coverprofile "$coverprofile"
+          goveralls -service wercker -coverprofile "$coverprofile" -repotoken "$COVERALLS_TOKEN"
