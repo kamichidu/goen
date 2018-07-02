@@ -4,6 +4,7 @@ package example
 
 import (
 	"database/sql"
+	"os"
 
 	_ "github.com/kamichidu/goen/dialect/postgres"
 	_ "github.com/lib/pq"
@@ -33,7 +34,11 @@ create table posts (
 const dialectName = "postgres"
 
 func prepareDB() (string, *sql.DB) {
-	db, err := sql.Open(dialectName, "dbname=testing host=localhost user=testing password=testing sslmode=disable")
+	connstr := os.Getenv("GOEN_TEST_CONNSTR")
+	if connstr == "" {
+		connstr = "dbname=testing host=localhost user=testing password=testing sslmode=disable"
+	}
+	db, err := sql.Open(dialectName, connstr)
 	if err != nil {
 		panic(err)
 	}

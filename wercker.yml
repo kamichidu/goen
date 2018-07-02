@@ -43,14 +43,15 @@ build:
     - script:
         name: go test for postgres
         services:
-          - id: postgres
-            tag: 9.6-alpine
+          - name: testing
+            id: postgres:9.6-alpine
             env:
               POSTGRES_DB: testing
               POSTGRES_USER: testing
               POSTGRES_PASSWORD: testing
         code: |
-          go test -tags postgres -v ./...
+          GOEN_TEST_CONNSTR="dbname=testing user=testing password=testing host=testing port=5432 sslmode=disable" \
+            go test -tags postgres -v ./...
 
     - script:
         name: coverage
