@@ -43,8 +43,7 @@ build:
     - script:
         name: go test for postgres
         services:
-          - name: testing
-            id: postgres:9.6-alpine
+          - id: postgres:9.6-alpine
             env:
               POSTGRES_DB: testing
               POSTGRES_USER: testing
