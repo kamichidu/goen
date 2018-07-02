@@ -1,5 +1,12 @@
 box: golang
 
+services:
+  - id: postgres:9.6-alpine
+    env:
+      POSTGRES_DB: testing
+      POSTGRES_USER: testing
+      POSTGRES_PASSWORD: testing
+
 build:
   steps:
     - setup-go-workspace
@@ -42,12 +49,6 @@ build:
 
     - script:
         name: go test for postgres
-        services:
-          - id: postgres:9.6-alpine
-            env:
-              POSTGRES_DB: testing
-              POSTGRES_USER: testing
-              POSTGRES_PASSWORD: testing
         code: |
           GOEN_TEST_CONNSTR="dbname=testing user=testing password=testing host=${POSTGRES_PORT_5432_TCP_ADDR} port=${POSTGRES_PORT_5432_TCP_PORT} sslmode=disable" \
             go test -tags postgres -v ./...
