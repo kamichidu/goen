@@ -42,6 +42,13 @@ build:
 
     - script:
         name: go test for postgres
+        services:
+          - id: postgres
+            tag: 9.6-alpine
+            env:
+              POSTGRES_DB: testing
+              POSTGRES_USER: testing
+              POSTGRES_PASSWORD: testing
         code: |
           go test -tags postgres -v ./...
 
