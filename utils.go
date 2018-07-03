@@ -4,7 +4,7 @@ import (
 	"container/list"
 )
 
-//go:generate go run genlist.go -o utils_gen.go
+//go:generate go run tools/genlist.go -o utils_gen.go
 
 func NewPatchList() *PatchList {
 	return (*PatchList)(list.New())
