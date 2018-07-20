@@ -80,7 +80,7 @@ func TestDBContext(t *testing.T) {
 					scannedRecord[1] = string(v)
 				}
 				// enabled
-				scannedRecord[2] = scannedRecord[2]
+				// sqlite driver returns a bool as a bool type
 				// uuid
 				if v, ok := scannedRecord[3].([]byte); ok {
 					scannedRecord[3] = uuid.FromStringOrNil(string(v))
