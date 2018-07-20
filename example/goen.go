@@ -5,7 +5,6 @@
 package example
 
 import (
-	"container/list"
 	"database/sql"
 	"time"
 
@@ -345,7 +344,7 @@ func (dbset *BlogDBSet) Delete(v *Blog) {
 	dbset.dbc.Patch(metaSchema.DeletePatchOf(v))
 }
 
-func (dbset *BlogDBSet) includePosts(later *list.List, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *BlogDBSet) includePosts(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
 	entities, ok := records.([]*Blog)
 	if !ok {
 		return nil
@@ -405,7 +404,7 @@ func (dbset *BlogDBSet) includePosts(later *list.List, sc *goen.ScopeCache, reco
 		}
 
 		// for newly loaded entity, to be filled by includeLoader
-		later.PushBack(noCachedEntities)
+		later.AddRecords(noCachedEntities)
 	}
 
 	for _, entity := range entities {
@@ -881,7 +880,7 @@ func (dbset *PostDBSet) Delete(v *Post) {
 	dbset.dbc.Patch(metaSchema.DeletePatchOf(v))
 }
 
-func (dbset *PostDBSet) includeBlog(later *list.List, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *PostDBSet) includeBlog(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
 	entities, ok := records.([]*Post)
 	if !ok {
 		return nil
@@ -938,7 +937,7 @@ func (dbset *PostDBSet) includeBlog(later *list.List, sc *goen.ScopeCache, recor
 		}
 
 		// for newly loaded entity, to be filled by includeLoader
-		later.PushBack(noCachedEntities)
+		later.AddRecords(noCachedEntities)
 	}
 
 	for _, entity := range entities {

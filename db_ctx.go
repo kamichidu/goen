@@ -125,7 +125,7 @@ func (dbc *DBContext) Include(v interface{}, sc *ScopeCache, loader IncludeLoade
 	for depth := 0; depth < maxDepth; depth++ {
 		nextRecordsList := list.New()
 		for records := recordsList.Front(); records != nil; records = records.Next() {
-			if err := loader.Load(nextRecordsList, sc, records.Value); err != nil {
+			if err := loader.Load((*IncludeBuffer)(nextRecordsList), sc, records.Value); err != nil {
 				return err
 			}
 		}

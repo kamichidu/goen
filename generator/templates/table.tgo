@@ -278,7 +278,7 @@ func (dbset *{{ $dbsetType }}) Delete(v *{{ $.Entity }}) {
 {{/* one-to-many relations begin */}}
 {{ range $rel := $.OneToManyRelations }}
 
-func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
     entities, ok := records.([]*{{ $.Entity }})
     if !ok {
         return nil
@@ -338,7 +338,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc 
         }
 
         // for newly loaded entity, to be filled by includeLoader
-        later.PushBack(noCachedEntities)
+        later.AddRecords(noCachedEntities)
     }
 
     for _, entity := range entities {
@@ -362,7 +362,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc 
 {{/* many-to-one relations begin */}}
 {{ range $rel := $.ManyToOneRelations }}
 
-func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
     entities, ok := records.([]*{{ $.Entity }})
     if !ok {
         return nil
@@ -422,7 +422,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *list.List, sc 
         }
 
         // for newly loaded entity, to be filled by includeLoader
-        later.PushBack(noCachedEntities)
+        later.AddRecords(noCachedEntities)
     }
 
     for _, entity := range entities {
