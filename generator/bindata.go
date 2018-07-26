@@ -192,14 +192,14 @@ var _escData = map[string]*_escFile{
 
 	"/templates/context.tgo": {
 		local:   "templates/context.tgo",
-		size:    532,
-		modtime: 1530498695,
+		size:    856,
+		modtime: 1532581055,
 		compressed: `
-H4sIAAAAAAAC/5yQwW7CMBBE7/mKEaIViWg+IBKXNL1yKT8Q20sUKV2ovRFFUf692gCmRGoP9ckezz7t
-jJyPhKp8PbDQlyCI761gSAAgaw7EefxMJnEY4GtuCEupTUcoNljmO70GjOPNsnQmkOwUXmxw9C3LHoun
-UJXvJIvrbP7G0sr559hMR/bIujuJnb7GJNn3bLGlU9xz5dq6Iyvb+oM0UMvNGs4gC59dXpUpsnveS1Bn
-rK45xf2NpIh0cnuS3jOeo+0C0ROlQpnrqP9V2ss11H+am8/O6ivAdJo3uHLGpg+raZc3klb6HQAA//9D
-kKRFFAIAAA==
+H4sIAAAAAAAC/8ySQW6zMBSE95xiFOX/BSjlAEjZULrNpvQA2H5BSNSk+KEQIe5e2QRIUBupXZUVfp43
+mvlkvpwIafJca6aOYbhpJaP3ACAsatLRfOm5Yd+jyXVB2HIuKkK8xzbK7K/BMEySrRKGOLPm8R6nptR8
+xOafSZNX4s11N3rRXPLldm01R3jvtShJK3saPO/YaokDneecvirziiQf8neyhUpd7KAEQvNRRWkSIFz6
+jkWVkDamq/udk7UInLohbhuN/7NsNLHfPIqt526eP4L2dC31G3Lr3RW+GJrOa4K+EjK4i2ZZTk4LUqu7
+QRXgzVDW+dyNILPuC5CyqrXLrYRcHk40bf6En7P6owRdtscMPwMAAP//m3s0c1gDAAA=
 `,
 	},
 

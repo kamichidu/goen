@@ -253,3 +253,57 @@ func Example_generatedSchemaFields() {
 	// dbc.Blog.Name = "name"
 	// dbc.Blog.Author = "author"
 }
+
+func Example_transaction() {
+	dbc := NewDBContext(prepareDB())
+	dbc.DebugMode(true)
+
+	tx, err := dbc.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	txc := dbc.UseTx(tx)
+	blogID := uuid.Must(uuid.FromString("d03bc237-eef4-4b6f-afe1-ea901357d828"))
+	txc.Blog.Insert(&Blog{
+		BlogID: blogID,
+		Name:   "tx",
+		Author: "kamichidu",
+	})
+	if err := txc.SaveChanges(); err != nil {
+		panic(err)
+	}
+
+	n, err := dbc.Blog.Select().
+		Where(dbc.Blog.BlogID.Eq(blogID)).
+		Count()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("dbc founds %d blogs when not committed yet\n", n)
+
+	n, err = txc.Blog.Select().
+		Where(dbc.Blog.BlogID.Eq(blogID)).
+		Count()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("txc founds %d blogs when not committed yet since it's in same transaction\n", n)
+
+	if err := tx.Commit(); err != nil {
+		panic(err)
+	}
+
+	n, err = dbc.Blog.Select().
+		Where(dbc.Blog.BlogID.Eq(blogID)).
+		Count()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("dbc founds %d blogs after committed\n", n)
+
+	// Output:
+	// dbc founds 0 blogs when not committed yet
+	// txc founds 1 blogs when not committed yet since it's in same transaction
+	// dbc founds 1 blogs after committed
+}

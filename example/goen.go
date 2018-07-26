@@ -965,3 +965,12 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 		Post:      newPostDBSet(dbc),
 	}
 }
+
+func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
+	clone := dbc.DBContext.UseTx(tx)
+	return &DBContext{
+		DBContext: clone,
+		Blog:      newBlogDBSet(clone),
+		Post:      newPostDBSet(clone),
+	}
+}

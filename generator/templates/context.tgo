@@ -17,3 +17,14 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
         {{ end -}}
     }
 }
+
+func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
+    clone := dbc.DBContext.UseTx(tx)
+    return &DBContext{
+        DBContext: clone,
+        {{ range $table := $.Tables -}}
+        {{ $dbsetType := printf "%sDBSet" $table.Entity -}}
+        {{ $table.Entity }}: new{{ $dbsetType }}(clone),
+        {{ end -}}
+    }
+}
