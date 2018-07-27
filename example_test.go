@@ -30,7 +30,7 @@ func Example_bulkOperation() {
 	dbc := goen.NewDBContext("sqlite3", db)
 
 	// set patch compiler, it compiles patches to bulk
-	dbc.Compiler = goen.BulkInsertCompiler
+	dbc.Compiler = goen.BulkCompiler
 
 	for i := 0; i < 3; i++ {
 		dbc.Patch(goen.InsertPatch(

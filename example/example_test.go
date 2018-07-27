@@ -217,7 +217,7 @@ func Example_count() {
 		})
 	}
 
-	dbc.Compiler = goen.BulkInsertCompiler
+	dbc.Compiler = goen.BulkCompiler
 	if err := dbc.SaveChanges(); err != nil {
 		panic(err)
 	}

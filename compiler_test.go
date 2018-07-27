@@ -14,112 +14,265 @@ func TestPatchCompilerFunc(t *testing.T) {
 }
 
 func TestBulkInsertCompiler(t *testing.T) {
-	t.Run("SimpleCase", func(t *testing.T) {
-		patches := NewPatchList()
-		patches.PushBack(&Patch{
-			Kind:      PatchInsert,
-			TableName: "testing",
-			Columns:   []string{"id", "name"},
-			Values:    []interface{}{1, "a"},
-		})
-		patches.PushBack(&Patch{
-			Kind:      PatchInsert,
-			TableName: "testing",
-			Columns:   []string{"id", "name"},
-			Values:    []interface{}{2, "b"},
-		})
-		patches.PushBack(&Patch{
-			Kind:      PatchInsert,
-			TableName: "testing",
-			Columns:   []string{"id", "name"},
-			Values:    []interface{}{3, "c"},
-		})
-		sqlizers := BulkInsertCompiler.Compile(&CompilerOptions{
-			StmtBuilder: sqr.StatementBuilder,
-			Patches:     patches,
-		})
-		if !assert.Equal(t, 1, sqlizers.Len()) {
-			return
-		}
-
-		sqlizer := sqlizers.Front().GetValue()
-		query, args, err := sqlizer.ToSql()
-		assert.NoError(t, err)
-		assert.Equal(t, `INSERT INTO testing (id,name) VALUES (?,?),(?,?),(?,?)`, query)
-		assert.Equal(t, []interface{}{1, "a", 2, "b", 3, "c"}, args)
-	})
-	t.Run("ComplexCase", func(t *testing.T) {
-		patches := NewPatchList()
-		patches.PushBack(&Patch{
-			Kind:      PatchInsert,
-			TableName: "testing",
-			Columns:   []string{"id", "name"},
-			Values:    []interface{}{1, "a"},
-		})
-		patches.PushBack(&Patch{
-			Kind:      PatchInsert,
-			TableName: "testing",
-			Columns:   []string{"id", "name"},
-			Values:    []interface{}{2, "b"},
-		})
-		patches.PushBack(&Patch{
-			Kind:      PatchUpdate,
-			TableName: "testing",
-			Columns:   []string{"name"},
-			Values:    []interface{}{"c"},
-			RowKey: &MapRowKey{
-				Table: "testing",
-				Key: map[string]interface{}{
-					"id": 1,
-				},
+	cases := []struct {
+		Patches  []*Patch
+		Sqlizers []sqr.Sqlizer
+	}{
+		{
+			[]*Patch{
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{1, "a"},
+				),
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{2, "b"},
+				),
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{3, "c"},
+				),
 			},
-		})
-		patches.PushBack(&Patch{
-			Kind:      PatchInsert,
-			TableName: "testing",
-			Columns:   []string{"id", "name"},
-			Values:    []interface{}{3, "c"},
-		})
-		sqlizers := BulkInsertCompiler.Compile(&CompilerOptions{
+			[]sqr.Sqlizer{
+				sqr.Expr(`INSERT INTO testing (id,name) VALUES (?,?),(?,?),(?,?)`, 1, "a", 2, "b", 3, "c"),
+			},
+		},
+		{
+			[]*Patch{
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{1, "a"},
+				),
+				InsertPatch(
+					"testing",
+					[]string{"id", "name", "memo"},
+					[]interface{}{2, "b", "memo"},
+				),
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{3, "c"},
+				),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`INSERT INTO testing (id,name) VALUES (?,?)`, 1, "a"),
+				sqr.Expr(`INSERT INTO testing (id,name,memo) VALUES (?,?,?)`, 2, "b", "memo"),
+				sqr.Expr(`INSERT INTO testing (id,name) VALUES (?,?)`, 3, "c"),
+			},
+		},
+		{
+			[]*Patch{
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 3,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`UPDATE testing SET name = ? WHERE (id = ? OR id = ? OR id = ?)`, "a", 1, 2, 3),
+			},
+		},
+		{
+			[]*Patch{
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				UpdatePatch("testing", []string{"name", "memo"}, []interface{}{"a", "memo"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 3,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`UPDATE testing SET name = ? WHERE (id = ?)`, "a", 1),
+				sqr.Expr(`UPDATE testing SET name = ?, memo = ? WHERE (id = ?)`, "a", "memo", 2),
+				sqr.Expr(`UPDATE testing SET name = ? WHERE (id = ?)`, "a", 3),
+			},
+		},
+		{
+			[]*Patch{
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 3,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`DELETE FROM testing WHERE (id = ? OR id = ? OR id = ?)`, 1, 2, 3),
+			},
+		},
+		{
+			[]*Patch{
+				DeletePatch("testing1", &MapRowKey{
+					Table: "testing1",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				DeletePatch("testing2", &MapRowKey{
+					Table: "testing2",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+				DeletePatch("testing1", &MapRowKey{
+					Table: "testing1",
+					Key: map[string]interface{}{
+						"id": 3,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`DELETE FROM testing1 WHERE (id = ?)`, 1),
+				sqr.Expr(`DELETE FROM testing2 WHERE (id = ?)`, 2),
+				sqr.Expr(`DELETE FROM testing1 WHERE (id = ?)`, 3),
+			},
+		},
+		{
+			[]*Patch{
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{1, "a"},
+				),
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{2, "b"},
+				),
+				UpdatePatch(
+					"testing",
+					[]string{"name"},
+					[]interface{}{"c"},
+					&MapRowKey{
+						Table: "testing",
+						Key: map[string]interface{}{
+							"id": 1,
+						},
+					},
+				),
+				UpdatePatch(
+					"testing",
+					[]string{"name"},
+					[]interface{}{"c"},
+					&MapRowKey{
+						Table: "testing",
+						Key: map[string]interface{}{
+							"id": 2,
+						},
+					},
+				),
+				InsertPatch(
+					"testing",
+					[]string{"id", "name"},
+					[]interface{}{3, "c"},
+				),
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`INSERT INTO testing (id,name) VALUES (?,?),(?,?)`, 1, "a", 2, "b"),
+				sqr.Expr(`UPDATE testing SET name = ? WHERE (id = ? OR id = ?)`, "c", 1, 2),
+				sqr.Expr(`INSERT INTO testing (id,name) VALUES (?,?)`, 3, "c"),
+				sqr.Expr(`DELETE FROM testing WHERE (id = ? OR id = ?)`, 1, 2),
+			},
+		},
+	}
+	for _, c := range cases {
+		patches := NewPatchList()
+		for _, patch := range c.Patches {
+			patches.PushBack(patch)
+		}
+		sqlizers := BulkCompiler.Compile(&CompilerOptions{
 			StmtBuilder: sqr.StatementBuilder,
 			Patches:     patches,
 		})
-		if !assert.Equal(t, 3, sqlizers.Len()) {
-			t.Log("Got sqlizers:")
-			for curr := sqlizers.Front(); curr != nil; curr = curr.Next() {
-				query, args, err := curr.GetValue().ToSql()
-				if err == nil {
-					t.Logf("%q with %v", query, args)
+		if !assert.Equal(t, len(c.Sqlizers), sqlizers.Len()) {
+			t.Log("expect sqlizers:")
+			for _, sqlizer := range c.Sqlizers {
+				query, args, err := sqlizer.ToSql()
+				if err != nil {
+					t.Log(err)
 				} else {
-					t.Logf("%s", err)
+					t.Logf("%q with %v", query, args)
 				}
 			}
-			return
+			t.Log("actual sqlizers:")
+			for curr := sqlizers.Front(); curr != nil; curr = curr.Next() {
+				query, args, err := curr.GetValue().ToSql()
+				if err != nil {
+					t.Log(err)
+				} else {
+					t.Logf("%q with %v", query, args)
+				}
+			}
+			continue
 		}
+
 		curr := sqlizers.Front()
+		for _, sqlizer := range c.Sqlizers {
+			expectQuery, expectArgs, err := sqlizer.ToSql()
+			if err != nil {
+				panic(err)
+			}
+			query, args, err := curr.GetValue().ToSql()
+			if !assert.NoError(t, err) {
+				continue
+			}
+			assert.Equal(t, expectQuery, query)
+			assert.Equal(t, expectArgs, args)
 
-		sqlizer := curr.GetValue()
-		curr = curr.Next()
-		query, args, err := sqlizer.ToSql()
-		if assert.NoError(t, err) {
-			assert.Equal(t, `INSERT INTO testing (id,name) VALUES (?,?),(?,?)`, query)
-			assert.Equal(t, []interface{}{1, "a", 2, "b"}, args)
+			curr = curr.Next()
 		}
-
-		sqlizer = curr.GetValue()
-		curr = curr.Next()
-		query, args, err = sqlizer.ToSql()
-		if assert.NoError(t, err) {
-			assert.Equal(t, `UPDATE testing SET name = ? WHERE id = ?`, query)
-			assert.Equal(t, []interface{}{"c", 1}, args)
-		}
-
-		sqlizer = curr.GetValue()
-		curr = curr.Next()
-		query, args, err = sqlizer.ToSql()
-		if assert.NoError(t, err) {
-			assert.Equal(t, `INSERT INTO testing (id,name) VALUES (?,?)`, query)
-			assert.Equal(t, []interface{}{3, "c"}, args)
-		}
-	})
+	}
 }
