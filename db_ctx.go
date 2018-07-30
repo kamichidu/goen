@@ -33,6 +33,13 @@ type DBContext struct {
 	// This is used when DebugMode(true).
 	Logger Logger
 
+	// The depth limit to avoid circular Include work.
+	// When this value is positive, Include works N-times.
+	// When this value is negative, Include works unlimited.
+	// When this value is 0, Include never works.
+	// Default is 10.
+	MaxIncludeDepth int
+
 	dialect dialect.Dialect
 
 	debug bool
@@ -53,11 +60,12 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 		panic(fmt.Sprintf("goen: unknown dialect %q (forgotten import?)", dialectName))
 	}
 	return &DBContext{
-		DB:          db,
-		dialect:     dialect,
-		patchBuffer: NewPatchList(),
-		stmtBuilder: sqr.StatementBuilder.PlaceholderFormat(dialect.PlaceholderFormat()),
-		stmtCacher:  sqr.NewStmtCacher(db),
+		DB:              db,
+		MaxIncludeDepth: 10,
+		dialect:         dialect,
+		patchBuffer:     NewPatchList(),
+		stmtBuilder:     sqr.StatementBuilder.PlaceholderFormat(dialect.PlaceholderFormat()),
+		stmtCacher:      sqr.NewStmtCacher(db),
 	}
 }
 
@@ -136,10 +144,9 @@ func (dbc *DBContext) Scan(rows *sql.Rows, v interface{}) error {
 }
 
 func (dbc *DBContext) Include(v interface{}, sc *ScopeCache, loader IncludeLoader) error {
-	const maxDepth = 10
 	recordsList := list.New()
 	recordsList.PushBack(v)
-	for depth := 0; depth < maxDepth; depth++ {
+	for depth := 0; depth < dbc.MaxIncludeDepth; depth++ {
 		nextRecordsList := list.New()
 		for records := recordsList.Front(); records != nil; records = records.Next() {
 			if err := loader.Load((*IncludeBuffer)(nextRecordsList), sc, records.Value); err != nil {
