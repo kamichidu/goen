@@ -76,19 +76,3 @@ Let's review the rules and conventions for entity fields:
 | `foreign_key:"column_name"` | Indicates this field is referencing another entity, and specifies keys |
 | `foreign_key:"column_name1,column_name2:reference_column_name"` | Indicates this field is referencing another entity, and specifies key pairs |
 | `ignore:""` | Specifies this columns is to be ignored |
-
-## TODO until alpha release
-
-- [ ] write godoc
-- [x] write license header
-- [ ] escape table and column name
-- [ ] <s>tracking changes for entity</s>
-- [ ] <s>detaching</s>
-- [ ] <s>auto detect insert/update</s>
-    - <s>needs to insert/update related entities</s>
-- [x] auto loading relations
-- [x] eager loading
-- [x] transaction support
-- [x] entity caching
-- [x] able to output a generated file to an another directory
-- [x] embedded struct support
