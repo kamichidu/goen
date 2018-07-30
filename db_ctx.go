@@ -14,13 +14,23 @@ import (
 	sqr "gopkg.in/Masterminds/squirrel.v1"
 )
 
+// DBContext holds *sql.DB (and *sql.Tx) with contextual values.
+// goen is intended to work with *sql.DB (and *sql.Tx) via DBContext.
 type DBContext struct {
+	// This field is readonly.
+	// Sets via NewDBContext().
 	DB *sql.DB
 
+	// This field is readonly.
+	// Sets via UseTx(); or nil.
 	Tx *sql.Tx
 
+	// The patch compiler.
+	// This is used when need to compile patch to query.
 	Compiler PatchCompiler
 
+	// The logger for debugging.
+	// This is used when DebugMode(true).
 	Logger Logger
 
 	dialect dialect.Dialect
@@ -34,6 +44,7 @@ type DBContext struct {
 	stmtCacher sqr.DBProxyContext
 }
 
+// NewDBContext creates DBContext with given dialectName and db.
 func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 	dialectsMu.RLock()
 	dialect, ok := dialects[dialectName]
@@ -50,14 +61,17 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 	}
 }
 
+// Dialect returns dialect.Dialect holds by this context.
 func (dbc *DBContext) Dialect() dialect.Dialect {
 	return dbc.dialect
 }
 
+// DebugMode sets debug flag.
 func (dbc *DBContext) DebugMode(enabled bool) {
 	dbc.debug = enabled
 }
 
+// UseTx returns clone of current DBContext with given *sql.Tx.
 func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
 	// replace db runner and copy state
 	clone := &DBContext{
