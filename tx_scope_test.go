@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Example_TxScope_funcCall() {
+func ExampleTxScope_funcCall() {
 	db, err := sql.Open("sqlite3", "./sqlite.db")
 	if err != nil {
 		panic(err)
@@ -36,7 +36,7 @@ func Example_TxScope_funcCall() {
 	// Output:
 }
 
-func Example_TxScope_do() {
+func ExampleTxScope_do() {
 	db, err := sql.Open("sqlite3", "./sqlite.db")
 	if err != nil {
 		panic(err)
