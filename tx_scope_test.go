@@ -1,6 +1,7 @@
 package goen_test
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -148,6 +149,18 @@ func TestTxScope(t *testing.T) {
 		}
 		assert.Zero(t, msg)
 	})
+	t.Run("Direct with Begin error", func(t *testing.T) {
+		stat1 = db.Stats()
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		err := goen.TxScope(db.BeginTx(ctx, &sql.TxOptions{}))(func(tx *sql.Tx) error {
+			panic("never called")
+		})
+		stat2 = db.Stats()
+
+		assert.Exactly(t, err, context.Canceled)
+		assert.Equal(t, stat2.OpenConnections, stat1.OpenConnections, "use TxScpe once, it automatically commit/rollback given transaction")
+	})
 	t.Run("Do", func(t *testing.T) {
 		var id int64
 		stat1 = db.Stats()
@@ -204,5 +217,17 @@ func TestTxScope(t *testing.T) {
 			return
 		}
 		assert.Zero(t, msg)
+	})
+	t.Run("Do with Begin error", func(t *testing.T) {
+		stat1 = db.Stats()
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		err := goen.TxScope(db.BeginTx(ctx, &sql.TxOptions{})).Do(func(tx *sql.Tx) error {
+			panic("never called")
+		})
+		stat2 = db.Stats()
+
+		assert.Exactly(t, err, context.Canceled)
+		assert.Equal(t, stat2.OpenConnections, stat1.OpenConnections, "use TxScpe once, it automatically commit/rollback given transaction")
 	})
 }
