@@ -237,6 +237,9 @@ func (m *MetaSchema) computeOf(typ reflect.Type) *metaTable {
 		}
 		metaT.RefecenceKeys = m.computeReferenceKeysOf(typ)
 	}
+	if metaT.TableName == "" {
+		metaT.TableName = strcase.SnakeCase(typ.Name())
+	}
 	return metaT
 }
 
