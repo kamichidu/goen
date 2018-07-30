@@ -11,7 +11,13 @@ import (
 	"strings"
 
 	"github.com/kamichidu/goen/generator"
+	"github.com/tcnksm/go-latest"
 )
+
+var latestSource = &latest.GithubTag{
+	Owner:      "kamichidu",
+	Repository: "goen",
+}
 
 type excludeGlobsFlag []string
 
@@ -56,9 +62,20 @@ func isDifferentDir(a string, b string) bool {
 	return apath != bpath
 }
 
+func checkVersion(w io.Writer, verStr string) {
+	res, err := latest.Check(latestSource, verStr)
+	if err != nil {
+		fmt.Fprintf(w, "version check error: %s\n\n", err)
+	} else if res.Outdated {
+		fmt.Fprintf(w, "%s is not latest, should upgrade to %s\n\n", verStr, res.Current)
+	}
+}
+
 func run(stdin io.Reader, stdout io.Writer, stderr io.Writer, args []string) int {
 	log.SetOutput(stderr)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	checkVersion(stderr, version)
 
 	var (
 		outPkgName   string
