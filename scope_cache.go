@@ -1,7 +1,6 @@
 package goen
 
 import (
-	"reflect"
 	"sync"
 )
 
@@ -36,26 +35,25 @@ func (sc *ScopeCache) AddObject(v interface{}) {
 	defer sc.mu.Unlock()
 
 	pk, refes := sc.Meta.RowKeysOf(v)
-	key, err := sc.Meta.KeyStringFromRowKey(pk)
+	pkKey, err := sc.Meta.KeyStringFromRowKey(pk)
 	if err != nil {
 		panic("goen: failed to get key string: " + err.Error())
 	}
-	sc.data[key] = v
+	sc.data[pkKey] = v
 
 	for _, refe := range refes {
-		if reflect.DeepEqual(refe, pk) {
-			continue
-		}
-
-		key, err := sc.Meta.KeyStringFromRowKey(refe)
+		refeKey, err := sc.Meta.KeyStringFromRowKey(refe)
 		if err != nil {
 			panic("goen: failed to get key string: " + err.Error())
 		}
+		if pkKey == refeKey {
+			continue
+		}
 		var slice []interface{}
-		if cached, ok := sc.data[key]; ok {
+		if cached, ok := sc.data[refeKey]; ok {
 			slice = cached.([]interface{})
 		}
-		sc.data[key] = append(slice, v)
+		sc.data[refeKey] = append(slice, v)
 	}
 }
 

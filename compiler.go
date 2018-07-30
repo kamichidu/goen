@@ -1,10 +1,8 @@
 package goen
 
 import (
-	"database/sql/driver"
-	"reflect"
-
 	sqr "gopkg.in/Masterminds/squirrel.v1"
+	"reflect"
 )
 
 var (
@@ -144,34 +142,12 @@ func (compiler *bulkCompiler) isCompat(p1, p2 *Patch) bool {
 	}
 	switch p1.Kind {
 	case PatchUpdate:
-		if len(p1.Values) != len(p2.Values) {
+		// do not use "database/sql/driver".Valuer.
+		// it's for converting go type to sql type; type converting.
+		// if converts the actual value, maybe illegal implementation.
+		if !reflect.DeepEqual(p1.Values, p2.Values) {
 			return false
-		} else {
-			for i := range p1.Values {
-				if !compiler.isCompatValue(p1.Values[i], p2.Values[i]) {
-					return false
-				}
-			}
 		}
 	}
 	return true
-}
-
-func (compiler *bulkCompiler) isCompatValue(v1, v2 interface{}) bool {
-	valuer1, ok1 := v1.(driver.Valuer)
-	valuer2, ok2 := v2.(driver.Valuer)
-	if ok1 != ok2 {
-		return false
-	} else if ok1 {
-		var err error
-		v1, err = valuer1.Value()
-		if err != nil {
-			return false
-		}
-		v2, err = valuer2.Value()
-		if err != nil {
-			return false
-		}
-	}
-	return reflect.DeepEqual(v1, v2)
 }
