@@ -129,6 +129,9 @@ func Example_transaction() {
 		panic(err)
 	}
 	txc := dbc.UseTx(tx)
+	if txc.Tx != tx {
+		panic("UseTx makes clones DBContext and set Tx with given value")
+	}
 	txc.Patch(&goen.Patch{
 		Kind:      goen.PatchInsert,
 		TableName: "testing",

@@ -17,6 +17,8 @@ import (
 type DBContext struct {
 	DB *sql.DB
 
+	Tx *sql.Tx
+
 	Compiler PatchCompiler
 
 	Logger Logger
@@ -60,6 +62,7 @@ func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
 	// replace db runner and copy state
 	clone := &DBContext{
 		DB:          dbc.DB,
+		Tx:          tx,
 		dialect:     dbc.dialect,
 		debug:       dbc.debug,
 		patchBuffer: NewPatchList(),
