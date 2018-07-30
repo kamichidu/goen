@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-//go:generate go run tools/genlist.go -o utils_gen.go
+//go:generate go run _tools/genlist.go -o utils_gen.go
 
 func NewPatchList() *PatchList {
 	return (*PatchList)(list.New())
