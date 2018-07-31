@@ -90,14 +90,13 @@ func (m *MetaSchema) PrimaryKeyOf(entity interface{}) RowKey {
 	return rowKey
 }
 
-func (m *MetaSchema) RowKeysOf(entity interface{}) (primary RowKey, refes []RowKey) {
+func (m *MetaSchema) ReferenceKeysOf(entity interface{}) []RowKey {
 	m.Compute()
-
-	primary = m.PrimaryKeyOf(entity)
 
 	metaT := m.LoadOf(entity)
 	rv := reflect.ValueOf(entity)
 	rv = reflect.Indirect(rv)
+	var refes []RowKey
 	for _, refeKey := range metaT.RefecenceKeys {
 		refe := &MapRowKey{}
 		refe.Table = metaT.TableName
@@ -108,7 +107,7 @@ func (m *MetaSchema) RowKeysOf(entity interface{}) (primary RowKey, refes []RowK
 		}
 		refes = append(refes, refe)
 	}
-	return primary, refes
+	return refes
 }
 
 func (m *MetaSchema) LoadOf(entity interface{}) *metaTable {

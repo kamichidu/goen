@@ -64,14 +64,14 @@ func TestMetadataMap(t *testing.T) {
 	meta.Register(Text{})
 	meta.Compute()
 
-	t.Run("RowKeysOf", func(t *testing.T) {
+	t.Run("PrimaryKeyOf", func(t *testing.T) {
 		blog := &Blog{
 			IDInt:    1,
 			IDString: "str",
 			IDTextID: "tid",
 			IDBlobID: "bid",
 		}
-		pk, refes := meta.RowKeysOf(blog)
+		pk := meta.PrimaryKeyOf(blog)
 		assert.EqualValues(t, &MapRowKey{
 			Table: "blogs",
 			Key: map[string]interface{}{
@@ -81,6 +81,26 @@ func TestMetadataMap(t *testing.T) {
 				"id_blob_id": BlobID("bid"),
 			},
 		}, pk)
+
+		txt := &Text{
+			TextID: 1,
+		}
+		pk = meta.PrimaryKeyOf(txt)
+		assert.EqualValues(t, &MapRowKey{
+			Table: "text",
+			Key: map[string]interface{}{
+				"text_id": 1,
+			},
+		}, pk)
+	})
+	t.Run("ReferenceKeysOf", func(t *testing.T) {
+		blog := &Blog{
+			IDInt:    1,
+			IDString: "str",
+			IDTextID: "tid",
+			IDBlobID: "bid",
+		}
+		refes := meta.ReferenceKeysOf(blog)
 		assert.EqualValues(t, []RowKey{
 			&MapRowKey{Table: "blogs", Key: map[string]interface{}{"id_string": "str"}},
 		}, refes)
@@ -88,13 +108,7 @@ func TestMetadataMap(t *testing.T) {
 		txt := &Text{
 			TextID: 1,
 		}
-		pk, refes = meta.RowKeysOf(txt)
-		assert.EqualValues(t, &MapRowKey{
-			Table: "text",
-			Key: map[string]interface{}{
-				"text_id": 1,
-			},
-		}, pk)
+		refes = meta.ReferenceKeysOf(txt)
 		assert.Len(t, refes, 0)
 	})
 	t.Run("KeyStringFromRowKey", func(t *testing.T) {
