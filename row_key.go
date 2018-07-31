@@ -43,24 +43,3 @@ func (key *MapRowKey) ToSql() (string, []interface{}, error) {
 	}
 	return expr.ToSql()
 }
-
-//
-// type PrimaryKey struct {
-// 	TableName string
-//
-// 	Columns []string
-//
-// 	Values []interface{}
-// }
-//
-// func (pk *PrimaryKey) RowKey() ([]string, []interface{}) {
-// 	return pk.Columns, pk.Values
-// }
-//
-// func (pk *PrimaryKey) ToSql() (string, []interface{}, error) {
-// 	expr := sqr.Eq{}
-// 	for i := range pk.Columns {
-// 		expr[pk.Columns[i]] = pk.Values[i]
-// 	}
-// 	return expr.ToSql()
-// }
