@@ -189,7 +189,6 @@ func (c {{ $typ }}) NotIn(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
     return &{{ $sqlizerImpl}}{squirrel.NotEq{string(c): v}}
 }
 
-{{ if eq $column.FieldType "string" }}
 func (c {{ $typ }}) Like(v {{ $column.FieldType }}) {{ $sqlizerType }} {
     return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " LIKE ?", v)}
 }
@@ -197,7 +196,30 @@ func (c {{ $typ }}) Like(v {{ $column.FieldType }}) {{ $sqlizerType }} {
 func (c {{ $typ }}) NotLike(v {{ $column.FieldType }}) {{ $sqlizerType }} {
     return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " NOT LIKE ?", v)}
 }
-{{ end }}
+
+func (c {{ $typ }}) Lt(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Lt{string(c): v}}
+}
+
+func (c {{ $typ }}) LtOrEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c {{ $typ }}) Gt(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Gt{string(c): v}}
+}
+
+func (c {{ $typ }}) GtOrEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c {{ $typ }}) Between(v1, v2 {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c {{ $typ }}) NotBetween(v1, v2 {{ $column.FieldType }}) {{ $sqlizerType }} {
+    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " NOT BETWEEN ? AND ?", v1, v2)}
+}
 
 func (c {{ $typ }}) Asc() {{ $orderType }} {
     return {{ $columnOrderType }}(string(c))

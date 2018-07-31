@@ -195,6 +195,38 @@ func (c _Blog_BlogID) NotIn(v []uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
+func (c _Blog_BlogID) Like(v uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
+}
+
+func (c _Blog_BlogID) NotLike(v uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Blog_BlogID) Lt(v uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Blog_BlogID) LtOrEq(v uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Blog_BlogID) Gt(v uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Blog_BlogID) GtOrEq(v uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Blog_BlogID) Between(v1, v2 uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Blog_BlogID) NotBetween(v1, v2 uuid.UUID) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
+}
+
 func (c _Blog_BlogID) Asc() BlogOrderExpr {
 	return _Blog_BlogID_OrderExpr(string(c))
 }
@@ -243,6 +275,30 @@ func (c _Blog_Name) NotLike(v string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
+func (c _Blog_Name) Lt(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Blog_Name) LtOrEq(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Blog_Name) Gt(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Blog_Name) GtOrEq(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Blog_Name) Between(v1, v2 string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Blog_Name) NotBetween(v1, v2 string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
+}
+
 func (c _Blog_Name) Asc() BlogOrderExpr {
 	return _Blog_Name_OrderExpr(string(c))
 }
@@ -289,6 +345,30 @@ func (c _Blog_Author) Like(v string) BlogSqlizer {
 
 func (c _Blog_Author) NotLike(v string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Blog_Author) Lt(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Blog_Author) LtOrEq(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Blog_Author) Gt(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Blog_Author) GtOrEq(v string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Blog_Author) Between(v1, v2 string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Blog_Author) NotBetween(v1, v2 string) BlogSqlizer {
+	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c _Blog_Author) Asc() BlogOrderExpr {
@@ -602,6 +682,38 @@ func (c _Post_CreatedAt) NotIn(v []time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
+func (c _Post_CreatedAt) Like(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
+}
+
+func (c _Post_CreatedAt) NotLike(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Post_CreatedAt) Lt(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_CreatedAt) LtOrEq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_CreatedAt) Gt(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_CreatedAt) GtOrEq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_CreatedAt) Between(v1, v2 time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_CreatedAt) NotBetween(v1, v2 time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
+}
+
 func (c _Post_CreatedAt) Asc() PostOrderExpr {
 	return _Post_CreatedAt_OrderExpr(string(c))
 }
@@ -640,6 +752,38 @@ func (c _Post_UpdatedAt) In(v []time.Time) PostSqlizer {
 
 func (c _Post_UpdatedAt) NotIn(v []time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
+}
+
+func (c _Post_UpdatedAt) Like(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
+}
+
+func (c _Post_UpdatedAt) NotLike(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Post_UpdatedAt) Lt(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_UpdatedAt) LtOrEq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_UpdatedAt) Gt(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_UpdatedAt) GtOrEq(v time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_UpdatedAt) Between(v1, v2 time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_UpdatedAt) NotBetween(v1, v2 time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c _Post_UpdatedAt) Asc() PostOrderExpr {
@@ -682,6 +826,38 @@ func (c _Post_BlogID) NotIn(v []uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
+func (c _Post_BlogID) Like(v uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
+}
+
+func (c _Post_BlogID) NotLike(v uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Post_BlogID) Lt(v uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_BlogID) LtOrEq(v uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_BlogID) Gt(v uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_BlogID) GtOrEq(v uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_BlogID) Between(v1, v2 uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_BlogID) NotBetween(v1, v2 uuid.UUID) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
+}
+
 func (c _Post_BlogID) Asc() PostOrderExpr {
 	return _Post_BlogID_OrderExpr(string(c))
 }
@@ -720,6 +896,38 @@ func (c _Post_PostID) In(v []int) PostSqlizer {
 
 func (c _Post_PostID) NotIn(v []int) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
+}
+
+func (c _Post_PostID) Like(v int) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
+}
+
+func (c _Post_PostID) NotLike(v int) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Post_PostID) Lt(v int) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_PostID) LtOrEq(v int) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_PostID) Gt(v int) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_PostID) GtOrEq(v int) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_PostID) Between(v1, v2 int) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_PostID) NotBetween(v1, v2 int) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c _Post_PostID) Asc() PostOrderExpr {
@@ -770,6 +978,30 @@ func (c _Post_Title) NotLike(v string) PostSqlizer {
 	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
+func (c _Post_Title) Lt(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_Title) LtOrEq(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_Title) Gt(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_Title) GtOrEq(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_Title) Between(v1, v2 string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_Title) NotBetween(v1, v2 string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
+}
+
 func (c _Post_Title) Asc() PostOrderExpr {
 	return _Post_Title_OrderExpr(string(c))
 }
@@ -816,6 +1048,30 @@ func (c _Post_Content) Like(v string) PostSqlizer {
 
 func (c _Post_Content) NotLike(v string) PostSqlizer {
 	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Post_Content) Lt(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_Content) LtOrEq(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_Content) Gt(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_Content) GtOrEq(v string) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_Content) Between(v1, v2 string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_Content) NotBetween(v1, v2 string) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c _Post_Content) Asc() PostOrderExpr {
