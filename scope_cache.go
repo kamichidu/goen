@@ -23,10 +23,7 @@ func (sc *ScopeCache) GetObject(rowKey RowKey) interface{} {
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
 
-	key, err := sc.Meta.KeyStringFromRowKey(rowKey)
-	if err != nil {
-		panic("goen: failed to get key string: " + err.Error())
-	}
+	key := sc.Meta.KeyStringFromRowKey(rowKey)
 	return sc.data[key]
 }
 
@@ -35,17 +32,11 @@ func (sc *ScopeCache) AddObject(v interface{}) {
 	defer sc.mu.Unlock()
 
 	pk, refes := sc.Meta.RowKeysOf(v)
-	pkKey, err := sc.Meta.KeyStringFromRowKey(pk)
-	if err != nil {
-		panic("goen: failed to get key string: " + err.Error())
-	}
+	pkKey := sc.Meta.KeyStringFromRowKey(pk)
 	sc.data[pkKey] = v
 
 	for _, refe := range refes {
-		refeKey, err := sc.Meta.KeyStringFromRowKey(refe)
-		if err != nil {
-			panic("goen: failed to get key string: " + err.Error())
-		}
+		refeKey := sc.Meta.KeyStringFromRowKey(refe)
 		if pkKey == refeKey {
 			continue
 		}
@@ -61,10 +52,7 @@ func (sc *ScopeCache) HasObject(rowKey RowKey) bool {
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
 
-	key, err := sc.Meta.KeyStringFromRowKey(rowKey)
-	if err != nil {
-		panic("goen: failed to get key string: " + err.Error())
-	}
+	key := sc.Meta.KeyStringFromRowKey(rowKey)
 	_, ok := sc.data[key]
 	return ok
 }
@@ -75,10 +63,7 @@ func (sc *ScopeCache) RemoveObject(v interface{}) {
 
 	pk, refes := sc.Meta.RowKeysOf(v)
 	for _, rowKey := range append(refes, pk) {
-		key, err := sc.Meta.KeyStringFromRowKey(rowKey)
-		if err != nil {
-			panic("goen: failed to get key string: " + err.Error())
-		}
+		key := sc.Meta.KeyStringFromRowKey(rowKey)
 		delete(sc.data, key)
 	}
 }

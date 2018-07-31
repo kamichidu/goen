@@ -42,29 +42,36 @@ type MetaSchema struct {
 	built *sync.Map
 }
 
-func (m *MetaSchema) KeyStringFromRowKey(rowKey RowKey) (string, error) {
+func (m *MetaSchema) KeyStringFromRowKey(rowKey RowKey) string {
 	m.Compute()
 
 	cols, vals := rowKey.RowKey()
 	params := make([]string, len(cols))
 	for i := range cols {
-		if m, ok := vals[i].(encoding.TextMarshaler); ok {
-			b, err := m.MarshalText()
-			if err != nil {
-				return "", err
+		var valStr string
+		perr := safeDo(func() {
+			if m, ok := vals[i].(encoding.TextMarshaler); ok {
+				if b, err := m.MarshalText(); err != nil {
+					panic(err)
+				} else {
+					valStr = string(b)
+				}
+			} else if m, ok := vals[i].(encoding.BinaryMarshaler); ok {
+				if b, err := m.MarshalBinary(); err != nil {
+					panic(err)
+				} else {
+					valStr = hex.EncodeToString(b)
+				}
+			} else {
+				valStr = fmt.Sprint(vals[i])
 			}
-			params[i] = cols[i] + "=" + string(b)
-		} else if m, ok := vals[i].(encoding.BinaryMarshaler); ok {
-			b, err := m.MarshalBinary()
-			if err != nil {
-				return "", err
-			}
-			params[i] = cols[i] + "=" + hex.EncodeToString(b)
-		} else {
-			params[i] = cols[i] + "=" + fmt.Sprint(vals[i])
+		})
+		if perr != nil {
+			valStr = perr.Error()
 		}
+		params[i] = cols[i] + "=" + valStr
 	}
-	return rowKey.TableName() + ";" + strings.Join(params, ";"), nil
+	return rowKey.TableName() + ";" + strings.Join(params, ";")
 }
 
 func (m *MetaSchema) PrimaryKeyOf(entity interface{}) RowKey {

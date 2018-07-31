@@ -98,7 +98,7 @@ func TestMetadataMap(t *testing.T) {
 		assert.Len(t, refes, 0)
 	})
 	t.Run("KeyStringFromRowKey", func(t *testing.T) {
-		key, err := meta.KeyStringFromRowKey(&MapRowKey{
+		key := meta.KeyStringFromRowKey(&MapRowKey{
 			Table: "blogs",
 			Key: map[string]interface{}{
 				"id_int":     1,
@@ -107,7 +107,6 @@ func TestMetadataMap(t *testing.T) {
 				"id_blob_id": BlobID("bid"),
 			},
 		})
-		assert.NoError(t, err)
 		// columns are sorted by name
 		assert.Equal(t, "blogs;id_blob_id="+hex.EncodeToString([]byte("MarshalBinary(bid)"))+";id_int=1;id_string=str;id_text_id=MarshalText(tid)", key)
 	})
