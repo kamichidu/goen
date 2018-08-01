@@ -37,9 +37,13 @@ func (key *MapRowKey) RowKey() ([]string, []interface{}) {
 }
 
 func (key *MapRowKey) ToSql() (string, []interface{}, error) {
+	return key.toEq().ToSql()
+}
+
+func (key *MapRowKey) toEq() sqr.Eq {
 	expr := sqr.Eq{}
 	for col, val := range key.Key {
 		expr[col] = val
 	}
-	return expr.ToSql()
+	return expr
 }
