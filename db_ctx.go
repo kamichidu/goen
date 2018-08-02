@@ -10,7 +10,6 @@ import (
 
 	"github.com/kamichidu/goen/dialect"
 	"github.com/kamichidu/goen/internal"
-	"github.com/stoewer/go-strcase"
 	sqr "gopkg.in/Masterminds/squirrel.v1"
 )
 
@@ -197,14 +196,14 @@ func (dbc *DBContext) scanRow(rows sqr.RowScanner, cols []*sql.ColumnType, rowTy
 		return res, err
 	case reflect.Struct:
 		dest := reflect.New(rowTyp).Elem()
+		strct := internal.NewStructFromReflect(rowTyp)
+		fields := internal.FieldsByFunc(strct.Fields(), internal.IsColumnField)
 		args := make([]interface{}, len(cols))
 		for i := range cols {
-			rfv := dest.FieldByNameFunc(func(name string) bool {
-				field, _ := dest.Type().FieldByName(name)
-				spec := internal.ColumnSpec(field.Tag)
-				columnName := internal.FirstNotEmpty(spec.Name(), strcase.SnakeCase(name))
-				return columnName == cols[i].Name()
-			})
+			var rfv reflect.Value
+			if field, ok := internal.FieldByFunc(fields, internal.EqColumnName(cols[i].Name())); ok {
+				rfv = dest.FieldByName(field.Name())
+			}
 			if !rfv.IsValid() {
 				panic(fmt.Sprintf("goen: unknown struct field for column %q on %v", cols[i].Name(), rowTyp))
 			}

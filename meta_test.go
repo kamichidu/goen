@@ -57,7 +57,7 @@ type Text struct {
 	Msg string
 }
 
-func TestMetadataMap(t *testing.T) {
+func TestMetaSchema(t *testing.T) {
 	meta := new(MetaSchema)
 	meta.Register(Blog{})
 	meta.Register(Post{})
