@@ -94,6 +94,7 @@ func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
 	return clone
 }
 
+// Patch adds raw patch into the buffer; without executing a query.
 func (dbc *DBContext) Patch(v *Patch) {
 	dbc.patchBuffer.PushBack(v)
 }
