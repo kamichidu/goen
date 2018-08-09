@@ -246,7 +246,12 @@ func (g *Generator) walkStruct(strct internal.Struct) error {
 		col.FieldName = field.Name()
 		col.FieldType = field.Type().String()
 		tbl.Columns = append(tbl.Columns, col)
-		if typ := field.Type(); typ.PkgPath() != "" {
+		// when typ is pointer, typ.PkgPath() returns empty string.
+		typ := field.Type()
+		for typ.Kind() == reflect.Ptr {
+			typ = typ.Elem()
+		}
+		if typ.PkgPath() != "" {
 			g.addImport(typ.PkgPath())
 		}
 	}

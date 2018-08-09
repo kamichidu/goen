@@ -196,8 +196,20 @@ func (at *aType) Kind() reflect.Kind {
 		case *ast.SelectorExpr:
 			// e.g. x time.Time
 			pkgName := expr.X.(*ast.Ident).Name
+			pkgPath := asts.FindPkgPath(at.file, pkgName)
+			pkg, err := asts.ParsePkgPath(pkgPath)
+			if err != nil {
+				panic(fmt.Sprintf("goen: failed to parse package %q: %s", pkgPath, err))
+			}
 			typName := expr.Sel.Name
-			panic(fmt.Sprintf("goen: *ast.SelectorExpr %q.%s", pkgName, typName))
+			file, obj, ok := asts.ObjectByFunc(pkg, asts.EqObjectName(typName))
+			if !ok {
+				panic(fmt.Sprintf("goen: couldnot find a type %q in package %q", typName, pkg.Name))
+			}
+			// must be a type declaration object
+			typSpec := obj.Decl.(*ast.TypeSpec)
+			typ := newAType(pkg, file, typSpec.Type)
+			kind = typ.Kind()
 		case *ast.StructType:
 			kind = reflect.Struct
 		default:
