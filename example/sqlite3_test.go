@@ -22,10 +22,11 @@ create table blogs (
 create table posts (
 	blog_id blob not null,
 	post_id integer not null primary key,
-	title varchar,
-	content varchar,
-	created_at datetime,
-	updated_at datetime,
+	title varchar not null,
+	content varchar not null,
+	created_at datetime not null,
+	updated_at datetime not null,
+	deleted_at datetime,
 	-- primary key(blog_id, post_id),
 	foreign key (blog_id) references blogs(blog_id)
 );

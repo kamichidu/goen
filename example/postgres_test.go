@@ -23,10 +23,11 @@ create table blogs (
 create table posts (
 	blog_id uuid not null,
 	post_id serial not null primary key,
-	title varchar,
-	content varchar,
-	created_at timestamp with time zone,
-	updated_at timestamp with time zone,
+	title varchar not null,
+	content varchar not null,
+	created_at timestamp with time zone not null,
+	updated_at timestamp with time zone not null,
+	deleted_at timestamp with time zone,
 	foreign key (blog_id) references blogs(blog_id)
 );
 `

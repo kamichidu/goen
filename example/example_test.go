@@ -98,6 +98,11 @@ func Example() {
 			spew.Printf("- %#v\n", post)
 			spew.Printf("  CreatedAt:%q\n", post.Timestamp.CreatedAt.Format(time.RFC3339))
 			spew.Printf("  UpdatedAt:%q\n", post.Timestamp.UpdatedAt.Format(time.RFC3339))
+			if post.DeletedAt != nil {
+				spew.Printf("  DeletedAt:%q\n", post.DeletedAt.Format(time.RFC3339))
+			} else {
+				spew.Print("  DeletedAt:nil\n")
+			}
 		}
 	}
 	// Output:
@@ -107,9 +112,11 @@ func Example() {
 	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
+	//   DeletedAt:nil
 	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
+	//   DeletedAt:nil
 	// (*example.Blog){BlogID:(uuid.UUID)b95e5d4d-7eb9-4612-882d-224daa4a59ee Name:(string)testing2 Author:(string)unknown Posts:([]*example.Post)<nil>}
 }
 
@@ -306,4 +313,57 @@ func Example_transaction() {
 	// dbc founds 0 blogs when not committed yet
 	// txc founds 1 blogs when not committed yet since it's in same transaction
 	// dbc founds 1 blogs after committed
+}
+
+func Example_nullableColumn() {
+	dbc := NewDBContext(prepareDB())
+	dbc.DebugMode(true)
+
+	blogID := uuid.Must(uuid.FromString("d03bc237-eef4-4b6f-afe1-ea901357d828"))
+	dbc.Blog.Insert(&Blog{
+		BlogID: blogID,
+		Name:   "nullable",
+		Author: "kamichidu",
+	})
+	now, err := time.Parse(time.RFC3339, "2018-08-09T13:48:29Z")
+	if err != nil {
+		panic(err)
+	}
+	dbc.Post.Insert(&Post{
+		BlogID: blogID,
+		Title:  "p1",
+		Timestamp: Timestamp{
+			CreatedAt: now,
+			UpdatedAt: now,
+			DeletedAt: &now,
+		},
+	})
+	dbc.Post.Insert(&Post{
+		BlogID: blogID,
+		Title:  "p2",
+		Timestamp: Timestamp{
+			CreatedAt: now,
+			UpdatedAt: now,
+			DeletedAt: nil,
+		},
+	})
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+
+	posts, err := dbc.Post.Select().OrderBy(dbc.Post.Title.Asc()).Query()
+	if err != nil {
+		panic(err)
+	}
+	for _, post := range posts {
+		if post.DeletedAt != nil {
+			fmt.Printf("%q > DeletedAt = %q\n", post.Title, post.DeletedAt.Format(time.RFC3339))
+		} else {
+			fmt.Printf("%q > DeletedAt = nil\n", post.Title)
+		}
+	}
+
+	// Output:
+	// "p1" > DeletedAt = "2018-08-09T13:48:29Z"
+	// "p2" > DeletedAt = nil
 }

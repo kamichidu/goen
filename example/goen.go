@@ -459,6 +459,7 @@ func (dbset *BlogDBSet) includePosts(later *goen.IncludeBuffer, sc *goen.ScopeCa
 		query, args, err := stmtBuilder.Select(
 			"created_at",
 			"updated_at",
+			"deleted_at",
 			"blog_id",
 			"post_id",
 			"title",
@@ -794,6 +795,78 @@ func (c _Post_UpdatedAt) Desc() PostOrderExpr {
 	return _Post_UpdatedAt_OrderExpr(string(c) + " DESC")
 }
 
+type _Post_DeletedAt_OrderExpr string
+
+func (s _Post_DeletedAt_OrderExpr) PostOrderExpr() string {
+	return string(s)
+}
+
+type _Post_DeletedAt string
+
+func (c _Post_DeletedAt) PostColumnExpr() string {
+	return string(c)
+}
+
+func (c _Post_DeletedAt) String() string {
+	return string(c)
+}
+
+func (c _Post_DeletedAt) Eq(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
+}
+
+func (c _Post_DeletedAt) NotEq(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
+}
+
+func (c _Post_DeletedAt) In(v []*time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Eq{string(c): v}}
+}
+
+func (c _Post_DeletedAt) NotIn(v []*time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
+}
+
+func (c _Post_DeletedAt) Like(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
+}
+
+func (c _Post_DeletedAt) NotLike(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
+}
+
+func (c _Post_DeletedAt) Lt(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Lt{string(c): v}}
+}
+
+func (c _Post_DeletedAt) LtOrEq(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
+}
+
+func (c _Post_DeletedAt) Gt(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Gt{string(c): v}}
+}
+
+func (c _Post_DeletedAt) GtOrEq(v *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
+}
+
+func (c _Post_DeletedAt) Between(v1, v2 *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_DeletedAt) NotBetween(v1, v2 *time.Time) PostSqlizer {
+	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
+}
+
+func (c _Post_DeletedAt) Asc() PostOrderExpr {
+	return _Post_DeletedAt_OrderExpr(string(c))
+}
+
+func (c _Post_DeletedAt) Desc() PostOrderExpr {
+	return _Post_DeletedAt_OrderExpr(string(c) + " DESC")
+}
+
 type _Post_BlogID_OrderExpr string
 
 func (s _Post_BlogID_OrderExpr) PostOrderExpr() string {
@@ -1089,6 +1162,8 @@ type PostDBSet struct {
 
 	UpdatedAt _Post_UpdatedAt
 
+	DeletedAt _Post_DeletedAt
+
 	BlogID _Post_BlogID
 
 	PostID _Post_PostID
@@ -1106,6 +1181,7 @@ func newPostDBSet(dbc *goen.DBContext) *PostDBSet {
 	}
 	dbset.CreatedAt = "created_at"
 	dbset.UpdatedAt = "updated_at"
+	dbset.DeletedAt = "deleted_at"
 	dbset.BlogID = "blog_id"
 	dbset.PostID = "post_id"
 	dbset.Title = "title"
