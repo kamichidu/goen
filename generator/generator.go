@@ -18,6 +18,18 @@ import (
 	"strings"
 )
 
+var requiredImports = []*Import{
+	&Import{
+		Path: "database/sql",
+	},
+	&Import{
+		Path: "gopkg.in/Masterminds/squirrel.v1",
+	},
+	&Import{
+		Path: "github.com/kamichidu/goen",
+	},
+}
+
 type Generator struct {
 	OutPkgName string
 
@@ -185,10 +197,9 @@ func (g *Generator) walkPkg(pkg *ast.Package) error {
 		g.pkgData.PackageName = pkg.Name
 	}
 
-	// required imports
-	g.addImport("database/sql")
-	g.addImport("gopkg.in/Masterminds/squirrel.v1")
-	g.addImport("github.com/kamichidu/goen")
+	for _, imp := range requiredImports {
+		g.addImportAs(imp.Name, imp.Path)
+	}
 	if g.OutPkgName != "" {
 		// import src package containing entities
 		_, pkgPath := asts.AssumeImport(g.SrcDir)
