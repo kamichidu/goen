@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/stoewer/go-strcase"
@@ -28,6 +29,8 @@ type StructField interface {
 
 // Type represents go type info.
 type Type interface {
+	fmt.Stringer
+
 	Name() string
 
 	PkgPath() string
@@ -35,6 +38,8 @@ type Type interface {
 	Kind() reflect.Kind
 
 	Elem() Type
+
+	NewStruct() Struct
 
 	Value() interface{}
 }
@@ -52,6 +57,15 @@ func TableName(strct Struct) string {
 		}
 	}
 	return name
+}
+
+func IsViewStruct(strct Struct) bool {
+	for _, field := range strct.Fields() {
+		if _, ok := field.Tag().Lookup(TagView); ok {
+			return true
+		}
+	}
+	return false
 }
 
 func IsColumnField(field StructField) bool {
@@ -98,6 +112,12 @@ func ReferenceKey(field StructField) []string {
 	return spec.ChildKey()
 }
 
+func EqFieldName(name string) func(StructField) bool {
+	return func(field StructField) bool {
+		return field.Name() == name
+	}
+}
+
 func EqColumnName(name string) func(StructField) bool {
 	return func(field StructField) bool {
 		if IsIgnoredField(field) {
@@ -138,4 +158,30 @@ func IsPrimaryKeyField(field StructField) bool {
 func IsForeignKeyField(field StructField) bool {
 	_, ok := field.Tag().Lookup(TagForeignKey)
 	return ok
+}
+
+func IsOneToManyField(field StructField) bool {
+	typ := field.Type()
+	if typ.Kind() != reflect.Slice {
+		return false
+	}
+	for typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice {
+		typ = typ.Elem()
+	}
+	return mustValidKind(typ.Kind()) == reflect.Struct
+}
+
+func IsManyToOneField(field StructField) bool {
+	typ := field.Type()
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	return mustValidKind(typ.Kind()) == reflect.Struct
+}
+
+func mustValidKind(v reflect.Kind) reflect.Kind {
+	if v == reflect.Invalid {
+		panic("goen: invalid kind of type")
+	}
+	return v
 }

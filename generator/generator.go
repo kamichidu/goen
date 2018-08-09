@@ -3,6 +3,8 @@ package generator
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kamichidu/goen/internal"
+	"github.com/kamichidu/goen/internal/asts"
 	"go/ast"
 	"go/build"
 	"go/parser"
@@ -11,6 +13,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -103,7 +106,7 @@ func (g *Generator) ParseDir() error {
 	if err != nil {
 		return err
 	} else if len(pkgs) > 1 {
-		pkgName, _ := AssumeImport(g.SrcDir)
+		pkgName, _ := asts.AssumeImport(g.SrcDir)
 		if pkg, ok := pkgs[pkgName]; ok {
 			pkgs = map[string]*ast.Package{
 				pkgName: pkg,
@@ -188,7 +191,7 @@ func (g *Generator) walkPkg(pkg *ast.Package) error {
 	g.addImport("github.com/kamichidu/goen")
 	if g.OutPkgName != "" {
 		// import src package containing entities
-		_, pkgPath := AssumeImport(g.SrcDir)
+		_, pkgPath := asts.AssumeImport(g.SrcDir)
 		g.addImportAs(".", pkgPath)
 	}
 
@@ -203,107 +206,121 @@ func (g *Generator) walkPkg(pkg *ast.Package) error {
 }
 
 func (g *Generator) walkFile(pkg *ast.Package, file *ast.File) error {
-	for objName, obj := range file.Scope.Objects {
-		if !ast.IsExported(objName) {
+	for _, obj := range file.Scope.Objects {
+		if !asts.IsExported(obj) {
 			continue
-		} else if !isEntityType(obj) {
+		} else if !asts.IsStructObject(obj) {
 			continue
 		}
 
-		log.Printf("analyzing struct type %q", objName)
-		astrct := newAStructFromObject(pkg, file, obj)
-		if err := g.walkStructTypeDecl(astrct); err != nil {
+		strct := internal.NewStructFromAST(pkg, file, obj)
+		_, ok := internal.FieldByFunc(strct.Fields(), func(field internal.StructField) bool {
+			_, ok := field.Tag().Lookup(internal.TagGoen)
+			return ok
+		})
+		if !ok {
+			continue
+		}
+
+		log.Printf("analyzing struct type %q", strct.Name())
+		if err := g.walkStruct(strct); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (g *Generator) walkStructTypeDecl(astrct *aStruct) error {
+func (g *Generator) walkStruct(strct internal.Struct) error {
 	tbl := new(Table)
-	tbl.TableName = astrct.TableName()
-	tbl.ReadOnly = astrct.ReadOnly()
-	tbl.Entity = astrct.Name()
+	tbl.TableName = internal.TableName(strct)
+	tbl.ReadOnly = internal.IsViewStruct(strct)
+	tbl.Entity = strct.Name()
 
-	for _, afield := range astrct.Fields() {
-		if !afield.IsExported() {
-			continue
-		} else if afield.Ignore() {
-			log.Printf("ignore %s.%s", astrct.Name(), afield.Name())
-			continue
+	colFields := internal.FieldsByFunc(strct.Fields(), internal.IsColumnField)
+	for _, field := range colFields {
+		log.Printf("analyzing struct field %s.%s as column", strct.Name(), field.Name())
+		col := new(Column)
+		col.ColumnName = internal.ColumnName(field)
+		col.OmitEmpty = internal.OmitEmpty(field)
+		col.IsPK = internal.IsPrimaryKeyField(field)
+		col.FieldName = field.Name()
+		col.FieldType = field.Type().String()
+		tbl.Columns = append(tbl.Columns, col)
+		if typ := field.Type(); typ.PkgPath() != "" {
+			g.addImport(typ.PkgPath())
 		}
-
-		log.Printf("analyzing struct field %s.%s", astrct.Name(), afield.Name())
+	}
+	foreFields := internal.FieldsByFunc(strct.Fields(), func(field internal.StructField) bool {
+		return !internal.IsIgnoredField(field) && internal.IsForeignKeyField(field)
+	})
+	for _, field := range foreFields {
+		log.Printf("analyzing struct field %s.%s as relation", strct.Name(), field.Name())
+		var refeStrct internal.Struct
 		switch {
-		case afield.IsOneToMany(), afield.IsManyToOne(), afield.IsOneToOne():
-			if afield.IsOneToMany() {
-				log.Printf("found one-to-many reference field %s.%s", astrct.Name(), afield.Name())
-			} else if afield.IsManyToOne() {
-				log.Printf("found many-to-one reference field %s.%s", astrct.Name(), afield.Name())
-			} else {
-				// TODO
-				log.Printf("found one-to-one reference field %s.%s", astrct.Name(), afield.Name())
+		case internal.IsOneToManyField(field):
+			log.Printf("found one-to-many reference field %s.%s", strct.Name(), field.Name())
+			typ := field.Type()
+			for typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice {
+				typ = typ.Elem()
 			}
-			refe := afield.Reference()
-			refeColumns := []string{}
-			for _, refef := range refe.Fields() {
-				if !refef.IsExported() {
-					continue
-				} else if refef.Ignore() {
-					continue
-				} else if !refef.IsColumn() {
-					continue
-				}
-				refeColumns = append(refeColumns, refef.ColumnName())
+			refeStrct = typ.NewStruct()
+		case internal.IsManyToOneField(field):
+			log.Printf("found many-to-one reference field %s.%s", strct.Name(), field.Name())
+			typ := field.Type()
+			for typ.Kind() == reflect.Ptr {
+				typ = typ.Elem()
 			}
-			rel := &Relation{
-				FieldName:   afield.Name(),
-				FieldType:   refe.Name(),
-				TableName:   refe.TableName(),
-				ColumnNames: refeColumns,
-			}
-			for _, colName := range afield.ForeignKeyColumnNames() {
-				fkf, ok := astrct.FieldByColumnName(colName)
-				if !ok {
-					panic(fmt.Sprintf("goen: invalid column name found on %s.%s", astrct.Name(), afield.Name()))
-				}
-				rel.ForeignKeys = append(rel.ForeignKeys, &RelationalColumn{
-					ColumnName: colName,
-					FieldName:  fkf.Name(),
-					FieldType:  fkf.Type().TypeString(),
-				})
-			}
-			for _, colName := range afield.ReferenceColumnNames() {
-				refef, ok := astrct.FieldByColumnName(colName)
-				if !ok {
-					panic(fmt.Sprintf("goen: invalid column name found on %s.%s", astrct.Name(), afield.Name()))
-				}
-				rel.References = append(rel.References, &RelationalColumn{
-					ColumnName: colName,
-					FieldName:  refef.Name(),
-					FieldType:  refef.Type().TypeString(),
-				})
-			}
-			if afield.IsOneToMany() {
-				tbl.OneToManyRelations = append(tbl.OneToManyRelations, rel)
-			} else if afield.IsManyToOne() {
-				tbl.ManyToOneRelations = append(tbl.ManyToOneRelations, rel)
-			} else {
-				tbl.OneToOneRelations = append(tbl.OneToOneRelations, rel)
-			}
-		case afield.IsColumn():
-			col := new(Column)
-			col.ColumnName = afield.ColumnName()
-			col.OmitEmpty = afield.OmitEmpty()
-			col.IsPK = afield.IsPrimaryKey()
-			col.FieldName = afield.Name()
-			col.FieldType = afield.Type().TypeString()
-			tbl.Columns = append(tbl.Columns, col)
-			if typ := afield.Type(); typ.PkgPath != "" {
-				g.addImport(typ.PkgPath)
-			}
+			refeStrct = typ.NewStruct()
 		default:
-			log.Printf("ignore field %s.%s", astrct.Name(), afield.Name())
+			// TODO
+			log.Printf("found one-to-one reference field %s.%s", strct.Name(), field.Name())
+			typ := field.Type()
+			for typ.Kind() == reflect.Ptr {
+				typ = typ.Elem()
+			}
+			refeStrct = typ.NewStruct()
+		}
+		if refeStrct == nil {
+			panic("goen: refeStrct is nil")
+		}
+		refeFields := internal.FieldsByFunc(refeStrct.Fields(), internal.IsColumnField)
+		rel := &Relation{
+			FieldName: field.Name(),
+			FieldType: refeStrct.Name(),
+			TableName: internal.TableName(refeStrct),
+		}
+		for _, refeField := range refeFields {
+			rel.ColumnNames = append(rel.ColumnNames, internal.ColumnName(refeField))
+		}
+		for _, foreColName := range internal.ForeignKey(field) {
+			foreField, ok := internal.FieldByFunc(colFields, internal.EqColumnName(foreColName))
+			if !ok {
+				panic(fmt.Sprintf("goen: invalid column name found on %s.%s", strct.Name(), field.Name()))
+			}
+			rel.ForeignKeys = append(rel.ForeignKeys, &RelationalColumn{
+				ColumnName: foreColName,
+				FieldName:  foreField.Name(),
+				FieldType:  foreField.Type().String(),
+			})
+		}
+		for _, refeColName := range internal.ReferenceKey(field) {
+			refeField, ok := internal.FieldByFunc(refeFields, internal.EqColumnName(refeColName))
+			if !ok {
+				panic(fmt.Sprintf("goen: invalid column name found on %s.%s", strct.Name(), field.Name()))
+			}
+			rel.References = append(rel.References, &RelationalColumn{
+				ColumnName: refeColName,
+				FieldName:  refeField.Name(),
+				FieldType:  refeField.Type().String(),
+			})
+		}
+		switch {
+		case internal.IsOneToManyField(field):
+			tbl.OneToManyRelations = append(tbl.OneToManyRelations, rel)
+		case internal.IsManyToOneField(field):
+			tbl.ManyToOneRelations = append(tbl.ManyToOneRelations, rel)
+		default:
+			tbl.OneToOneRelations = append(tbl.OneToOneRelations, rel)
 		}
 	}
 	g.pkgData.Tables = append(g.pkgData.Tables, tbl)

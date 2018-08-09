@@ -68,6 +68,14 @@ func (rt *rType) Elem() Type {
 	return &rType{rt.Type.Elem()}
 }
 
+func (rt *rType) NewStruct() Struct {
+	if rt.Kind() != reflect.Struct {
+		panic("goen: NewStruct is only with a struct type")
+	}
+
+	return NewStructFromReflect(rt.Type)
+}
+
 func (rt *rType) Value() interface{} {
 	return rt.Type
 }

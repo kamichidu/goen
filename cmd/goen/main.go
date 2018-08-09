@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/kamichidu/goen/generator"
+	"github.com/kamichidu/goen/internal/asts"
 	"github.com/tcnksm/go-latest"
 )
 
@@ -154,7 +155,7 @@ func run(stdin io.Reader, stdout io.Writer, stderr io.Writer, args []string) int
 	if outFile != "-" {
 		outDir := filepath.Dir(outFile)
 		if isDifferentDir(srcDir, outDir) {
-			pkgName, _ := generator.AssumeImport(outDir)
+			pkgName, _ := asts.AssumeImport(outDir)
 			if outPkgName != "" && pkgName != outPkgName {
 				log.Printf("output package name conflict: given %q but is %q", outPkgName, pkgName)
 				return 128

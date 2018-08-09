@@ -86,24 +86,32 @@ func TestRStructField(t *testing.T) {
 }
 
 func TestRType(t *testing.T) {
-	typ := reflect.TypeOf(reflect.Value{})
-	rtyp := &rType{typ}
+	raw := reflect.TypeOf(reflect.Value{})
+	praw := reflect.PtrTo(raw)
+	typ := &rType{raw}
+	ptyp := &rType{praw}
 
 	t.Run("Name", func(t *testing.T) {
-		assert.Equal(t, "Value", rtyp.Name())
+		assert.Equal(t, "Value", typ.Name())
+		assert.Equal(t, "", ptyp.Name())
 	})
 	t.Run("PkgPath", func(t *testing.T) {
-		assert.Equal(t, "reflect", rtyp.PkgPath())
+		assert.Equal(t, "reflect", typ.PkgPath())
+		assert.Equal(t, "", ptyp.PkgPath())
 	})
 	t.Run("Kind", func(t *testing.T) {
-		assert.Equal(t, reflect.Struct, rtyp.Kind())
+		assert.Equal(t, reflect.Struct, typ.Kind())
+		assert.Equal(t, reflect.Ptr, ptyp.Kind())
 	})
 	t.Run("Elem", func(t *testing.T) {
-		rtyp := &rType{reflect.PtrTo(typ)}
-		etyp := rtyp.Elem()
-		assert.Equal(t, &rType{typ}, etyp)
+		assert.Equal(t, typ, ptyp.Elem())
+
+		assert.Panics(t, func() {
+			typ.Elem()
+		})
 	})
 	t.Run("Value", func(t *testing.T) {
-		assert.Exactly(t, typ, rtyp.Value())
+		assert.Exactly(t, raw, typ.Value())
+		assert.Exactly(t, praw, ptyp.Value())
 	})
 }

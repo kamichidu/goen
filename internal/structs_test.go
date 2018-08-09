@@ -137,6 +137,22 @@ func TestReferenceKey(t *testing.T) {
 	}
 }
 
+func TestEqFieldName(t *testing.T) {
+	var ankoKirai StructField = &testingStructField{name: "AnkoKirai"}
+	var ankoSuki StructField = &testingStructField{name: "AnkoSuki"}
+	fn := EqFieldName("AnkoKirai")
+	assert.Equal(t, true, fn(ankoKirai))
+	assert.Equal(t, false, fn(ankoSuki))
+}
+
+func TestEqColumnName(t *testing.T) {
+	var ankoKirai StructField = &testingStructField{name: "AnkoSuki", tag: `column:"anko_kirai"`}
+	var ankoSuki StructField = &testingStructField{name: "AnkoSuki", tag: ``}
+	fn := EqColumnName("anko_kirai")
+	assert.Equal(t, true, fn(ankoKirai))
+	assert.Equal(t, false, fn(ankoSuki))
+}
+
 func TestFieldByFunc(t *testing.T) {
 	fields := []StructField{
 		&testingStructField{name: "AnkoSuki", tag: ``},
