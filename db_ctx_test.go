@@ -2,6 +2,8 @@ package goen_test
 
 import (
 	"database/sql"
+	"io/ioutil"
+	"log"
 	"testing"
 
 	"github.com/kamichidu/goen"
@@ -214,6 +216,55 @@ func TestDBContext(t *testing.T) {
 					scannedRecord.Scanner.Value,
 				})
 			}
+		})
+	})
+	t.Run("UseTx", func(t *testing.T) {
+		tx, err := db.Begin()
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer tx.Rollback()
+
+		t.Run("", func(t *testing.T) {
+			dbc := goen.NewDBContext("sqlite3", db)
+			dbc.Compiler = goen.BulkCompiler
+			dbc.Logger = log.New(ioutil.Discard, "", 0)
+			txc := dbc.UseTx(tx)
+			assert.True(t, dbc.DB == txc.DB,
+				"dbc.DB == txc.DB")
+			assert.True(t, dbc.Tx == nil && txc.Tx == tx,
+				"dbc.Tx == nil && txc.Tx == tx")
+			assert.True(t, dbc.Compiler == txc.Compiler,
+				"dbc.Compiler == txc.Compiler")
+			assert.True(t, dbc.Logger == txc.Logger,
+				"dbc.Logger == txc.Logger")
+			assert.True(t, dbc.MaxIncludeDepth == txc.MaxIncludeDepth,
+				"dbc.MaxIncludeDepth == txc.MaxIncludeDepth")
+			assert.True(t, dbc.QueryRunner == db && txc.QueryRunner == tx,
+				"dbc.QueryRunner == db && txc.QueryRunner == tx")
+		})
+		t.Run("", func(t *testing.T) {
+			dbc := goen.NewDBContext("sqlite3", db)
+			dbc.Compiler = goen.BulkCompiler
+			dbc.Logger = log.New(ioutil.Discard, "", 0)
+			dbc.QueryRunner = goen.NewStmtCacher(dbc.DB)
+			txc := dbc.UseTx(tx)
+			assert.True(t, dbc.DB == txc.DB,
+				"dbc.DB == txc.DB")
+			assert.True(t, dbc.Tx == nil && txc.Tx == tx,
+				"dbc.Tx == nil && txc.Tx == tx")
+			assert.True(t, dbc.Compiler == txc.Compiler,
+				"dbc.Compiler == txc.Compiler")
+			assert.True(t, dbc.Logger == txc.Logger,
+				"dbc.Logger == txc.Logger")
+			assert.True(t, dbc.MaxIncludeDepth == txc.MaxIncludeDepth,
+				"dbc.MaxIncludeDepth == txc.MaxIncludeDepth")
+			assert.True(t, dbc.QueryRunner != txc.QueryRunner,
+				"dbc.QueryRunner != txc.QueryRunner")
+			assert.IsType(t, (*goen.StmtCacher)(nil), dbc.QueryRunner,
+				"dbc.QueryRunner is *goen.StmtCacher")
+			assert.IsType(t, (*goen.StmtCacher)(nil), txc.QueryRunner,
+				"txc.QueryRunner is *goen.StmtCacher")
 		})
 	})
 }

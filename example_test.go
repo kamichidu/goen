@@ -194,5 +194,59 @@ func Example_transaction() {
 	// dbc founds 0 records when not committed yet
 	// txc founds 1 records when not committed yet since it's same transaction
 	// dbc founds 1 records after committed
-	// txc returns error after committed: "sql: statement is closed"
+	// txc returns error after committed: "sql: Transaction has already been committed or rolled back"
+}
+
+func Example_cachingPreparedStatements() {
+	db, err := sql.Open("sqlite3", "./sqlite.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	ddl := []string{
+		`drop table if exists testing`,
+		`create table testing (id integer primary key, name varchar(256))`,
+	}
+	if _, err := db.Exec(strings.Join(ddl, ";")); err != nil {
+		panic(err)
+	}
+
+	// goen.StmtCacher caches *sql.Stmt until closed.
+	preparedQueryRunner := goen.NewStmtCacher(db)
+	defer preparedQueryRunner.Close()
+
+	dbc := goen.NewDBContext("sqlite3", db)
+	// set preparedQueryRunner to dbc.QueryRunner.
+	dbc.QueryRunner = preparedQueryRunner
+
+	fmt.Printf("cached statements %v\n", preparedQueryRunner.StmtStats().CachedStmts)
+
+	err = goen.TxScope(dbc.DB.Begin())(func(tx *sql.Tx) error {
+		// txc also use preparedQueryRunner when dbc uses it.
+		txc := dbc.UseTx(tx)
+		txc.Patch(&goen.Patch{
+			Kind:      goen.PatchInsert,
+			TableName: "testing",
+			Columns:   []string{"name"},
+			Values:    []interface{}{"kamichidu"},
+		})
+		return txc.SaveChanges()
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("cached statements %v\n", preparedQueryRunner.StmtStats().CachedStmts)
+
+	var count int
+	if err := dbc.QueryRow(`select count(*) from testing`).Scan(&count); err != nil {
+		panic(err)
+	}
+	fmt.Printf("%v records found\n", count)
+	fmt.Printf("cached statements %v\n", preparedQueryRunner.StmtStats().CachedStmts)
+	// Output:
+	// cached statements 0
+	// cached statements 1
+	// 1 records found
+	// cached statements 2
 }

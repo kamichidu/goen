@@ -39,6 +39,10 @@ type DBContext struct {
 	// Default is 10.
 	MaxIncludeDepth int
 
+	// The runner for each query.
+	// This field is indented to hold one of *sql.DB, *sql.Tx or *StmtCacher.
+	QueryRunner QueryRunner
+
 	dialect dialect.Dialect
 
 	debug bool
@@ -46,8 +50,6 @@ type DBContext struct {
 	patchBuffer *PatchList
 
 	stmtBuilder sqr.StatementBuilderType
-
-	stmtCacher sqr.DBProxyContext
 }
 
 // NewDBContext creates DBContext with given dialectName and db.
@@ -61,10 +63,10 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 	return &DBContext{
 		DB:              db,
 		MaxIncludeDepth: 10,
+		QueryRunner:     db,
 		dialect:         dialect,
 		patchBuffer:     NewPatchList(),
 		stmtBuilder:     sqr.StatementBuilder.PlaceholderFormat(dialect.PlaceholderFormat()),
-		stmtCacher:      sqr.NewStmtCacher(db),
 	}
 }
 
@@ -81,17 +83,18 @@ func (dbc *DBContext) DebugMode(enabled bool) {
 // UseTx returns clone of current DBContext with given *sql.Tx.
 func (dbc *DBContext) UseTx(tx *sql.Tx) *DBContext {
 	// replace db runner and copy state
-	clone := &DBContext{
-		DB:          dbc.DB,
-		Tx:          tx,
-		dialect:     dbc.dialect,
-		debug:       dbc.debug,
-		patchBuffer: NewPatchList(),
-		stmtBuilder: dbc.stmtBuilder,
-		stmtCacher:  sqr.NewStmtCacher(tx),
+	var clone DBContext
+	clone = *dbc
+	clone.Tx = tx
+	if prep, ok := clone.QueryRunner.(*StmtCacher); ok {
+		txPrep := &txPreparer{tx: tx, PreparerContext: prep}
+		clone.QueryRunner = NewStmtCacher(txPrep)
+	} else {
+		clone.QueryRunner = tx
 	}
+	clone.patchBuffer = NewPatchList()
 	clone.patchBuffer.PushBackList(dbc.patchBuffer)
-	return clone
+	return &clone
 }
 
 // Patch adds raw patch into the buffer; without executing a query.
@@ -100,25 +103,25 @@ func (dbc *DBContext) Patch(v *Patch) {
 }
 
 func (dbc *DBContext) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return dbc.QueryContext(context.Background(), query, args...)
+}
+
+func (dbc *DBContext) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	if dbc.debug {
 		dbc.debugPrintf("goen: %q with %v", query, args)
 	}
-	stmt, err := dbc.stmtCacher.Prepare(query)
-	if err != nil {
-		return nil, err
-	}
-	return stmt.Query(args...)
+	return dbc.QueryRunner.QueryContext(ctx, query, args...)
 }
 
 func (dbc *DBContext) QueryRow(query string, args ...interface{}) *sql.Row {
+	return dbc.QueryRowContext(context.Background(), query, args...)
+}
+
+func (dbc *DBContext) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	if dbc.debug {
 		dbc.debugPrintf("goen: %q with %v", query, args)
 	}
-	stmt, err := dbc.stmtCacher.Prepare(query)
-	if err != nil {
-		panic(err)
-	}
-	return stmt.QueryRow(args...)
+	return dbc.QueryRunner.QueryRowContext(ctx, query, args...)
 }
 
 func (dbc *DBContext) Scan(rows *sql.Rows, v interface{}) error {
@@ -248,11 +251,7 @@ func (dbc *DBContext) SaveChangesContext(ctx context.Context) error {
 		if dbc.debug {
 			dbc.debugPrintf("goen: %q with %v", query, args)
 		}
-		stmt, err := dbc.stmtCacher.PrepareContext(ctx, query)
-		if err != nil {
-			return err
-		}
-		if _, err := stmt.ExecContext(ctx, args...); err != nil {
+		if _, err := dbc.QueryRunner.ExecContext(ctx, query, args...); err != nil {
 			return err
 		}
 	}
