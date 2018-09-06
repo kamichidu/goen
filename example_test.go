@@ -188,13 +188,15 @@ func Example_transaction() {
 	}()
 	func() {
 		_, err := txc.Query(`select * from testing`)
-		fmt.Printf("txc returns error after committed: %q\n", err)
+		if err == sql.ErrTxDone {
+			fmt.Print("txc returns an error sql.ErrTxDone after committed\n")
+		}
 	}()
 	// Output:
 	// dbc founds 0 records when not committed yet
 	// txc founds 1 records when not committed yet since it's same transaction
 	// dbc founds 1 records after committed
-	// txc returns error after committed: "sql: Transaction has already been committed or rolled back"
+	// txc returns an error sql.ErrTxDone after committed
 }
 
 func Example_cachingPreparedStatements() {
