@@ -5,6 +5,7 @@
 package example
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
@@ -100,13 +101,17 @@ func (qb BlogQueryBuilder) OrderBy(orderBys ...BlogOrderExpr) BlogQueryBuilder {
 }
 
 func (qb BlogQueryBuilder) Count() (int64, error) {
+	return qb.CountContext(context.Background())
+}
+
+func (qb BlogQueryBuilder) CountContext(ctx context.Context) (int64, error) {
 	query, args, err := qb.builder.Columns("count(*)").ToSql()
 	if err != nil {
 		return 0, err
 	}
 
 	var count int64
-	row := qb.dbc.QueryRow(query, args...)
+	row := qb.dbc.QueryRowContext(ctx, query, args...)
 	if err := row.Scan(&count); err != nil {
 		return 0, err
 	}
@@ -114,12 +119,20 @@ func (qb BlogQueryBuilder) Count() (int64, error) {
 }
 
 func (qb BlogQueryBuilder) Query() ([]*Blog, error) {
-	return qb.query()
+	return qb.QueryContext(context.Background())
+}
+
+func (qb BlogQueryBuilder) QueryContext(ctx context.Context) ([]*Blog, error) {
+	return qb.query(ctx)
 }
 
 func (qb BlogQueryBuilder) QueryRow() (*Blog, error) {
+	return qb.QueryRowContext(context.Background())
+}
+
+func (qb BlogQueryBuilder) QueryRowContext(ctx context.Context) (*Blog, error) {
 	qb.builder = qb.builder.Limit(1)
-	if records, err := qb.query(); err != nil {
+	if records, err := qb.query(ctx); err != nil {
 		return nil, err
 	} else if len(records) == 0 {
 		return nil, sql.ErrNoRows
@@ -128,7 +141,7 @@ func (qb BlogQueryBuilder) QueryRow() (*Blog, error) {
 	}
 }
 
-func (qb BlogQueryBuilder) query() ([]*Blog, error) {
+func (qb BlogQueryBuilder) query(ctx context.Context) ([]*Blog, error) {
 	// for caching reason, wont support filtering columns
 	metaT := metaSchema.LoadOf(&Blog{})
 	cols := make([]string, len(metaT.Columns))
@@ -140,7 +153,7 @@ func (qb BlogQueryBuilder) query() ([]*Blog, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := qb.dbc.Query(query, args...)
+	rows, err := qb.dbc.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +169,7 @@ func (qb BlogQueryBuilder) query() ([]*Blog, error) {
 	for _, record := range records {
 		sc.AddObject(record)
 	}
-	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+	if err := qb.dbc.IncludeContext(ctx, records, sc, qb.includeLoaders); err != nil {
 		return nil, err
 	}
 
@@ -424,7 +437,7 @@ func (dbset *BlogDBSet) Delete(v *Blog) {
 	dbset.dbc.Patch(metaSchema.DeletePatchOf(v))
 }
 
-func (dbset *BlogDBSet) includePosts(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *BlogDBSet) includePosts(ctx context.Context, later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
 	entities, ok := records.([]*Blog)
 	if !ok {
 		return nil
@@ -468,7 +481,7 @@ func (dbset *BlogDBSet) includePosts(later *goen.IncludeBuffer, sc *goen.ScopeCa
 		if err != nil {
 			return err
 		}
-		rows, err := dbset.dbc.Query(query, args...)
+		rows, err := dbset.dbc.QueryContext(ctx, query, args...)
 		if err != nil {
 			return err
 		}
@@ -588,13 +601,17 @@ func (qb PostQueryBuilder) OrderBy(orderBys ...PostOrderExpr) PostQueryBuilder {
 }
 
 func (qb PostQueryBuilder) Count() (int64, error) {
+	return qb.CountContext(context.Background())
+}
+
+func (qb PostQueryBuilder) CountContext(ctx context.Context) (int64, error) {
 	query, args, err := qb.builder.Columns("count(*)").ToSql()
 	if err != nil {
 		return 0, err
 	}
 
 	var count int64
-	row := qb.dbc.QueryRow(query, args...)
+	row := qb.dbc.QueryRowContext(ctx, query, args...)
 	if err := row.Scan(&count); err != nil {
 		return 0, err
 	}
@@ -602,12 +619,20 @@ func (qb PostQueryBuilder) Count() (int64, error) {
 }
 
 func (qb PostQueryBuilder) Query() ([]*Post, error) {
-	return qb.query()
+	return qb.QueryContext(context.Background())
+}
+
+func (qb PostQueryBuilder) QueryContext(ctx context.Context) ([]*Post, error) {
+	return qb.query(ctx)
 }
 
 func (qb PostQueryBuilder) QueryRow() (*Post, error) {
+	return qb.QueryRowContext(context.Background())
+}
+
+func (qb PostQueryBuilder) QueryRowContext(ctx context.Context) (*Post, error) {
 	qb.builder = qb.builder.Limit(1)
-	if records, err := qb.query(); err != nil {
+	if records, err := qb.query(ctx); err != nil {
 		return nil, err
 	} else if len(records) == 0 {
 		return nil, sql.ErrNoRows
@@ -616,7 +641,7 @@ func (qb PostQueryBuilder) QueryRow() (*Post, error) {
 	}
 }
 
-func (qb PostQueryBuilder) query() ([]*Post, error) {
+func (qb PostQueryBuilder) query(ctx context.Context) ([]*Post, error) {
 	// for caching reason, wont support filtering columns
 	metaT := metaSchema.LoadOf(&Post{})
 	cols := make([]string, len(metaT.Columns))
@@ -628,7 +653,7 @@ func (qb PostQueryBuilder) query() ([]*Post, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := qb.dbc.Query(query, args...)
+	rows, err := qb.dbc.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -644,7 +669,7 @@ func (qb PostQueryBuilder) query() ([]*Post, error) {
 	for _, record := range records {
 		sc.AddObject(record)
 	}
-	if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+	if err := qb.dbc.IncludeContext(ctx, records, sc, qb.includeLoaders); err != nil {
 		return nil, err
 	}
 
@@ -1212,7 +1237,7 @@ func (dbset *PostDBSet) Delete(v *Post) {
 	dbset.dbc.Patch(metaSchema.DeletePatchOf(v))
 }
 
-func (dbset *PostDBSet) includeBlog(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *PostDBSet) includeBlog(ctx context.Context, later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
 	entities, ok := records.([]*Post)
 	if !ok {
 		return nil
@@ -1252,7 +1277,7 @@ func (dbset *PostDBSet) includeBlog(later *goen.IncludeBuffer, sc *goen.ScopeCac
 		if err != nil {
 			return err
 		}
-		rows, err := dbset.dbc.Query(query, args...)
+		rows, err := dbset.dbc.QueryContext(ctx, query, args...)
 		if err != nil {
 			return err
 		}

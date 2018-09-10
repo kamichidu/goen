@@ -2,6 +2,7 @@ package goen
 
 import (
 	"container/list"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func TestIncludeLoaderFunc(t *testing.T) {
 	assert.Implements(
 		t,
 		(*IncludeLoader)(nil),
-		IncludeLoaderFunc(func(l *IncludeBuffer, sc *ScopeCache, v interface{}) error {
+		IncludeLoaderFunc(func(ctx context.Context, l *IncludeBuffer, sc *ScopeCache, v interface{}) error {
 			return nil
 		}),
 	)

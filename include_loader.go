@@ -2,6 +2,7 @@ package goen
 
 import (
 	"container/list"
+	"context"
 	"reflect"
 )
 
@@ -16,13 +17,13 @@ func (l *IncludeBuffer) AddRecords(records interface{}) {
 }
 
 type IncludeLoader interface {
-	Load(later *IncludeBuffer, sc *ScopeCache, records interface{}) error
+	Load(ctx context.Context, later *IncludeBuffer, sc *ScopeCache, records interface{}) error
 }
 
-type IncludeLoaderFunc func(*IncludeBuffer, *ScopeCache, interface{}) error
+type IncludeLoaderFunc func(context.Context, *IncludeBuffer, *ScopeCache, interface{}) error
 
-func (fn IncludeLoaderFunc) Load(later *IncludeBuffer, sc *ScopeCache, records interface{}) error {
-	return fn(later, sc, records)
+func (fn IncludeLoaderFunc) Load(ctx context.Context, later *IncludeBuffer, sc *ScopeCache, records interface{}) error {
+	return fn(ctx, later, sc, records)
 }
 
 type IncludeLoaderList []IncludeLoader
@@ -31,9 +32,9 @@ func (list *IncludeLoaderList) Append(v ...IncludeLoader) {
 	*list = append(*list, v...)
 }
 
-func (list IncludeLoaderList) Load(later *IncludeBuffer, sc *ScopeCache, records interface{}) error {
+func (list IncludeLoaderList) Load(ctx context.Context, later *IncludeBuffer, sc *ScopeCache, records interface{}) error {
 	for _, loader := range list {
-		if err := loader.Load(later, sc, records); err != nil {
+		if err := loader.Load(ctx, later, sc, records); err != nil {
 			return err
 		}
 	}

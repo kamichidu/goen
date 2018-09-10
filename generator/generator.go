@@ -20,6 +20,9 @@ import (
 
 var requiredImports = []*Import{
 	&Import{
+		Path: "context",
+	},
+	&Import{
 		Path: "database/sql",
 	},
 	&Import{

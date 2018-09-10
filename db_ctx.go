@@ -147,12 +147,16 @@ func (dbc *DBContext) Scan(rows *sql.Rows, v interface{}) error {
 }
 
 func (dbc *DBContext) Include(v interface{}, sc *ScopeCache, loader IncludeLoader) error {
+	return dbc.IncludeContext(context.Background(), v, sc, loader)
+}
+
+func (dbc *DBContext) IncludeContext(ctx context.Context, v interface{}, sc *ScopeCache, loader IncludeLoader) error {
 	recordsList := list.New()
 	recordsList.PushBack(v)
 	for depth := 0; depth < dbc.MaxIncludeDepth; depth++ {
 		nextRecordsList := list.New()
 		for records := recordsList.Front(); records != nil; records = records.Next() {
-			if err := loader.Load((*IncludeBuffer)(nextRecordsList), sc, records.Value); err != nil {
+			if err := loader.Load(ctx, (*IncludeBuffer)(nextRecordsList), sc, records.Value); err != nil {
 				return err
 			}
 		}

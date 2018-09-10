@@ -89,13 +89,17 @@ func (qb {{ $queryType }}) OrderBy(orderBys ...{{ $orderType }}) {{ $queryType }
 }
 
 func (qb {{ $queryType }}) Count() (int64, error) {
+    return qb.CountContext(context.Background())
+}
+
+func (qb {{ $queryType }}) CountContext(ctx context.Context) (int64, error) {
     query, args, err := qb.builder.Columns("count(*)").ToSql()
     if err != nil {
         return 0, err
     }
 
     var count int64
-    row := qb.dbc.QueryRow(query, args...)
+    row := qb.dbc.QueryRowContext(ctx, query, args...)
     if err := row.Scan(&count); err != nil {
         return 0, err
     }
@@ -103,12 +107,20 @@ func (qb {{ $queryType }}) Count() (int64, error) {
 }
 
 func (qb {{ $queryType }}) Query() ([]*{{ $.Entity }}, error) {
-    return qb.query()
+    return qb.QueryContext(context.Background())
+}
+
+func (qb {{ $queryType }}) QueryContext(ctx context.Context) ([]*{{ $.Entity }}, error) {
+    return qb.query(ctx)
 }
 
 func (qb {{ $queryType }}) QueryRow() (*{{ $.Entity }}, error) {
+    return qb.QueryRowContext(context.Background())
+}
+
+func (qb {{ $queryType }}) QueryRowContext(ctx context.Context) (*{{ $.Entity }}, error) {
     qb.builder = qb.builder.Limit(1)
-    if records, err := qb.query(); err != nil {
+    if records, err := qb.query(ctx); err != nil {
         return nil, err
     } else if len(records) == 0 {
         return nil, sql.ErrNoRows
@@ -117,7 +129,7 @@ func (qb {{ $queryType }}) QueryRow() (*{{ $.Entity }}, error) {
     }
 }
 
-func (qb {{ $queryType }}) query() ([]*{{ $.Entity }}, error) {
+func (qb {{ $queryType }}) query(ctx context.Context) ([]*{{ $.Entity }}, error) {
     // for caching reason, wont support filtering columns
     metaT := metaSchema.LoadOf(&{{ $.Entity }}{})
     cols := make([]string, len(metaT.Columns))
@@ -129,7 +141,7 @@ func (qb {{ $queryType }}) query() ([]*{{ $.Entity }}, error) {
     if err != nil {
         return nil, err
     }
-    rows, err := qb.dbc.Query(query, args...)
+    rows, err := qb.dbc.QueryContext(ctx, query, args...)
     if err != nil {
         return nil, err
     }
@@ -145,7 +157,7 @@ func (qb {{ $queryType }}) query() ([]*{{ $.Entity }}, error) {
     for _, record := range records {
         sc.AddObject(record)
     }
-    if err := qb.dbc.Include(records, sc, qb.includeLoaders); err != nil {
+    if err := qb.dbc.IncludeContext(ctx, records, sc, qb.includeLoaders); err != nil {
         return nil, err
     }
 
@@ -300,7 +312,7 @@ func (dbset *{{ $dbsetType }}) Delete(v *{{ $.Entity }}) {
 {{/* one-to-many relations begin */}}
 {{ range $rel := $.OneToManyRelations }}
 
-func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
     entities, ok := records.([]*{{ $.Entity }})
     if !ok {
         return nil
@@ -343,7 +355,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBu
         if err != nil {
             return err
         }
-        rows, err := dbset.dbc.Query(query, args...)
+        rows, err := dbset.dbc.QueryContext(ctx, query, args...)
         if err != nil {
             return err
         }
@@ -384,7 +396,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBu
 {{/* many-to-one relations begin */}}
 {{ range $rel := $.ManyToOneRelations }}
 
-func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
+func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, later *goen.IncludeBuffer, sc *goen.ScopeCache, records interface{}) error {
     entities, ok := records.([]*{{ $.Entity }})
     if !ok {
         return nil
@@ -427,7 +439,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(later *goen.IncludeBu
         if err != nil {
             return err
         }
-        rows, err := dbset.dbc.Query(query, args...)
+        rows, err := dbset.dbc.QueryContext(ctx, query, args...)
         if err != nil {
             return err
         }
