@@ -168,64 +168,6 @@ func (dbc *DBContext) IncludeContext(ctx context.Context, v interface{}, sc *Sco
 	return nil
 }
 
-func (dbc *DBContext) scanRow(rows sqr.RowScanner, cols []*sql.ColumnType, rowTyp reflect.Type) (reflect.Value, error) {
-	switch rowTyp.Kind() {
-	case reflect.Slice:
-		dest := make([]interface{}, len(cols))
-		args := make([]interface{}, len(cols))
-		for i := range cols {
-			// if possible to get ScanType, suggest to use its type
-			if typ := dbc.dialect.ScanTypeOf(cols[i]); typ != nil {
-				dest[i] = reflect.New(typ).Elem()
-			}
-			args[i] = &dest[i]
-		}
-		if err := rows.Scan(args...); err != nil {
-			return reflect.Value{}, err
-		}
-		return reflect.ValueOf(dest), nil
-	case reflect.Map:
-		res, err := dbc.scanRow(rows, cols, reflect.SliceOf(reflect.TypeOf((*interface{})(nil)).Elem()))
-		if err != nil {
-			return res, err
-		}
-		m := reflect.MakeMapWithSize(rowTyp, len(cols))
-		for i := range cols {
-			key := reflect.ValueOf(cols[i].Name())
-			value := res.Index(i)
-			m.SetMapIndex(key, value)
-		}
-		return m, nil
-	case reflect.Ptr:
-		res, err := dbc.scanRow(rows, cols, rowTyp.Elem())
-		if res.CanAddr() {
-			res = res.Addr()
-		}
-		return res, err
-	case reflect.Struct:
-		dest := reflect.New(rowTyp).Elem()
-		strct := internal.NewStructFromReflect(rowTyp)
-		fields := internal.FieldsByFunc(strct.Fields(), internal.IsColumnField)
-		args := make([]interface{}, len(cols))
-		for i := range cols {
-			var rfv reflect.Value
-			if field, ok := internal.FieldByFunc(fields, internal.EqColumnName(cols[i].Name())); ok {
-				rfv = dest.FieldByName(field.Name())
-			}
-			if !rfv.IsValid() {
-				panic(fmt.Sprintf("goen: unknown struct field for column %q on %v", cols[i].Name(), rowTyp))
-			}
-			args[i] = rfv.Addr().Interface()
-		}
-		if err := rows.Scan(args...); err != nil {
-			return reflect.Value{}, err
-		}
-		return dest, nil
-	default:
-		return reflect.Value{}, fmt.Errorf("goen: unsupported scan type %q", rowTyp)
-	}
-}
-
 func (dbc *DBContext) CompilePatch() *SqlizerList {
 	patches := *dbc.patchBuffer
 	dbc.patchBuffer.Init()
@@ -260,6 +202,78 @@ func (dbc *DBContext) SaveChangesContext(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// scanRow scans a row as given rowTyp.
+func (dbc *DBContext) scanRow(rows sqr.RowScanner, cols []*sql.ColumnType, rowTyp reflect.Type) (reflect.Value, error) {
+	switch rowTyp.Kind() {
+	case reflect.Slice:
+		return dbc.scanRowAsSlice(rows, cols, rowTyp)
+	case reflect.Map:
+		return dbc.scanRowAsMap(rows, cols, rowTyp)
+	case reflect.Ptr:
+		res, err := dbc.scanRow(rows, cols, rowTyp.Elem())
+		if res.CanAddr() {
+			res = res.Addr()
+		}
+		return res, err
+	case reflect.Struct:
+		return dbc.scanRowAsStruct(rows, cols, rowTyp)
+	default:
+		return reflect.Value{}, fmt.Errorf("goen: unsupported scan type %q", rowTyp)
+	}
+}
+
+// scanRowAsSlice scans a row as slice.
+func (dbc *DBContext) scanRowAsSlice(rows sqr.RowScanner, cols []*sql.ColumnType, rowTyp reflect.Type) (reflect.Value, error) {
+	dest := make([]interface{}, len(cols))
+	args := make([]interface{}, len(cols))
+	for i := range cols {
+		// if possible to get ScanType, suggest to use its type
+		if typ := dbc.dialect.ScanTypeOf(cols[i]); typ != nil {
+			dest[i] = reflect.New(typ).Elem()
+		}
+		args[i] = &dest[i]
+	}
+	if err := rows.Scan(args...); err != nil {
+		return reflect.Value{}, err
+	}
+	return reflect.ValueOf(dest), nil
+}
+
+// scanRowAsMap scans a row as map.
+func (dbc *DBContext) scanRowAsMap(rows sqr.RowScanner, cols []*sql.ColumnType, rowTyp reflect.Type) (reflect.Value, error) {
+	rvals, err := dbc.scanRowAsSlice(rows, cols, reflect.TypeOf([]interface{}{}))
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	dest := map[string]interface{}{}
+	for i := range cols {
+		dest[cols[i].Name()] = rvals.Index(i).Interface()
+	}
+	return reflect.ValueOf(dest), nil
+}
+
+// scanRowAsStruct scans a row as struct.
+func (dbc *DBContext) scanRowAsStruct(rows sqr.RowScanner, cols []*sql.ColumnType, rowTyp reflect.Type) (reflect.Value, error) {
+	dest := reflect.New(rowTyp).Elem()
+	strct := internal.NewStructFromReflect(rowTyp)
+	fields := internal.FieldsByFunc(strct.Fields(), internal.IsColumnField)
+	args := make([]interface{}, len(cols))
+	for i := range cols {
+		var rfv reflect.Value
+		if field, ok := internal.FieldByFunc(fields, internal.EqColumnName(cols[i].Name())); ok {
+			rfv = dest.FieldByName(field.Name())
+		}
+		if !rfv.IsValid() {
+			panic(fmt.Sprintf("goen: unknown struct field for column %q on %v", cols[i].Name(), rowTyp))
+		}
+		args[i] = rfv.Addr().Interface()
+	}
+	if err := rows.Scan(args...); err != nil {
+		return reflect.Value{}, err
+	}
+	return dest, nil
 }
 
 func (dbc *DBContext) debugPrint(v ...interface{}) {
