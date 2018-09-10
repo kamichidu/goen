@@ -2,6 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kamichidu/goen/badge.svg)](https://coveralls.io/github/kamichidu/goen)
 [![godoc](https://godoc.org/github.com/kamichidu/goen?status.svg)](https://godoc.org/github.com/kamichidu/goen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kamichidu/goen)](https://goreportcard.com/report/github.com/kamichidu/goen)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/kamichidu/goen/master/LICENSE)
 
 
 # goen
