@@ -262,6 +262,10 @@ func (at *aType) NewStruct() Struct {
 }
 
 func (at *aType) String() string {
+	return at.StringWithPkgName("")
+}
+
+func (at *aType) StringWithPkgName(altPkgName string) string {
 	var s string
 	var visitor ast.Visitor
 	visitor = asts.VisitorFunc(func(node ast.Node) ast.Visitor {
@@ -281,6 +285,9 @@ func (at *aType) String() string {
 		case *ast.SelectorExpr:
 			// e.g. x time.Time
 			pkgName := expr.X.(*ast.Ident).Name
+			if altPkgName != "" {
+				pkgName = altPkgName
+			}
 			typName := expr.Sel.Name
 			s += pkgName + "." + typName
 			return nil

@@ -7,10 +7,10 @@ package example
 import (
 	"context"
 	"database/sql"
-	"time"
+	time "time"
 
 	"github.com/kamichidu/goen"
-	"github.com/satori/go.uuid"
+	github_com_satori_go_uuid "github.com/satori/go.uuid"
 	"gopkg.in/Masterminds/squirrel.v1"
 )
 
@@ -192,51 +192,51 @@ func (c _Blog_BlogID) String() string {
 	return string(c)
 }
 
-func (c _Blog_BlogID) Eq(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) Eq(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
-func (c _Blog_BlogID) NotEq(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) NotEq(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
-func (c _Blog_BlogID) In(v []uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) In(v []github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Eq{string(c): v}}
 }
 
-func (c _Blog_BlogID) NotIn(v []uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) NotIn(v []github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{string(c): v}}
 }
 
-func (c _Blog_BlogID) Like(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) Like(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
 }
 
-func (c _Blog_BlogID) NotLike(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) NotLike(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
-func (c _Blog_BlogID) Lt(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) Lt(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Lt{string(c): v}}
 }
 
-func (c _Blog_BlogID) LtOrEq(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) LtOrEq(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.LtOrEq{string(c): v}}
 }
 
-func (c _Blog_BlogID) Gt(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) Gt(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Gt{string(c): v}}
 }
 
-func (c _Blog_BlogID) GtOrEq(v uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) GtOrEq(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.GtOrEq{string(c): v}}
 }
 
-func (c _Blog_BlogID) Between(v1, v2 uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) Between(v1, v2 github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
 }
 
-func (c _Blog_BlogID) NotBetween(v1, v2 uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) NotBetween(v1, v2 github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
 }
 
@@ -908,51 +908,51 @@ func (c _Post_BlogID) String() string {
 	return string(c)
 }
 
-func (c _Post_BlogID) Eq(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) Eq(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
-func (c _Post_BlogID) NotEq(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) NotEq(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
-func (c _Post_BlogID) In(v []uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) In(v []github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{string(c): v}}
 }
 
-func (c _Post_BlogID) NotIn(v []uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) NotIn(v []github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{string(c): v}}
 }
 
-func (c _Post_BlogID) Like(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) Like(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Expr(string(c)+" LIKE ?", v)}
 }
 
-func (c _Post_BlogID) NotLike(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) NotLike(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT LIKE ?", v)}
 }
 
-func (c _Post_BlogID) Lt(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) Lt(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Lt{string(c): v}}
 }
 
-func (c _Post_BlogID) LtOrEq(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) LtOrEq(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.LtOrEq{string(c): v}}
 }
 
-func (c _Post_BlogID) Gt(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) Gt(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Gt{string(c): v}}
 }
 
-func (c _Post_BlogID) GtOrEq(v uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) GtOrEq(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.GtOrEq{string(c): v}}
 }
 
-func (c _Post_BlogID) Between(v1, v2 uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) Between(v1, v2 github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Expr(string(c)+" BETWEEN ? AND ?", v1, v2)}
 }
 
-func (c _Post_BlogID) NotBetween(v1, v2 uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) NotBetween(v1, v2 github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Expr(string(c)+" NOT BETWEEN ? AND ?", v1, v2)}
 }
 

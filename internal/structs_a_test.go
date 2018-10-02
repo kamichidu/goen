@@ -176,6 +176,37 @@ func TestAType(t *testing.T) {
 			assert.Equal(t, c.Expect, field.Type().String())
 		}
 	})
+	t.Run("StringWithPkgName", func(t *testing.T) {
+		cases := []struct {
+			Expect    string
+			FieldName string
+		}{
+			{"string", "StringDecl"},
+			{"int", "IntDecl"},
+			{"*string", "StringPtrDecl"},
+			{"[]string", "StringSliceDecl"},
+			{"[]*string", "StringPtrSliceDecl"},
+			{"*[]string", "StringSlicePtrDecl"},
+			{"alt.Time", "TimeDecl"},
+			{"*alt.Time", "TimePtrDecl"},
+			{"[]alt.Time", "TimeSliceDecl"},
+			{"[]*alt.Time", "TimePtrSliceDecl"},
+			{"*[]alt.Time", "TimeSlicePtrDecl"},
+		}
+		strct := NewStructFromAST(astTestData("DeclTypes"))
+		for _, c := range cases {
+			field, ok := FieldByFunc(strct.Fields(), EqFieldName(c.FieldName))
+			if !ok {
+				assert.Fail(t, "no such field %q in struct %q", c.FieldName, strct.Name())
+				continue
+			}
+			typ := field.Type()
+			if !assert.Implements(t, (*TypeAlternator)(nil), typ) {
+				continue
+			}
+			assert.Equal(t, c.Expect, typ.(TypeAlternator).StringWithPkgName("alt"))
+		}
+	})
 	t.Run("Value", func(t *testing.T) {
 		strct := NewStructFromAST(astTestData("Testing"))
 		f, ok := FieldByFunc(strct.Fields(), EqFieldName("AnkoSuki"))

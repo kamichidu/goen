@@ -244,6 +244,31 @@ func (g *Generator) walkFile(pkg *ast.Package, file *ast.File) error {
 	return nil
 }
 
+func (g *Generator) safePkgImport(typ internal.Type) (pkgName string, pkgPath string) {
+	// when typ is pointer, typ.PkgPath() returns empty string.
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	pkgPath = typ.PkgPath()
+	if pkgPath == "" {
+		return "", ""
+	}
+	var safe []rune
+	for _, c := range []rune(pkgPath) {
+		switch {
+		case c >= 'a' && c <= 'z':
+			safe = append(safe, c)
+		case c >= 'A' && c <= 'Z':
+			safe = append(safe, c)
+		case c >= '0' && c <= '9':
+			safe = append(safe, c)
+		default:
+			safe = append(safe, '_')
+		}
+	}
+	return string(safe), pkgPath
+}
+
 func (g *Generator) walkStruct(strct internal.Struct) error {
 	tbl := new(Table)
 	tbl.TableName = internal.TableName(strct)
@@ -258,15 +283,15 @@ func (g *Generator) walkStruct(strct internal.Struct) error {
 		col.OmitEmpty = internal.OmitEmpty(field)
 		col.IsPK = internal.IsPrimaryKeyField(field)
 		col.FieldName = field.Name()
-		col.FieldType = field.Type().String()
-		tbl.Columns = append(tbl.Columns, col)
-		// when typ is pointer, typ.PkgPath() returns empty string.
-		typ := field.Type()
-		for typ.Kind() == reflect.Ptr {
-			typ = typ.Elem()
+		pkgName, pkgPath := g.safePkgImport(field.Type())
+		if alter, ok := field.Type().(internal.TypeAlternator); ok {
+			col.FieldType = alter.StringWithPkgName(pkgName)
+		} else {
+			col.FieldType = field.Type().String()
 		}
-		if typ.PkgPath() != "" {
-			g.addImport(typ.PkgPath())
+		tbl.Columns = append(tbl.Columns, col)
+		if pkgPath != "" {
+			g.addImportAs(pkgName, pkgPath)
 		}
 	}
 	foreFields := internal.FieldsByFunc(strct.Fields(), func(field internal.StructField) bool {

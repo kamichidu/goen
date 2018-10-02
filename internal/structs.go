@@ -33,6 +33,8 @@ type Type interface {
 
 	Name() string
 
+	// original package path.
+	// like github.com/kamichidu/goen, reflect or empty.
 	PkgPath() string
 
 	Kind() reflect.Kind
@@ -42,6 +44,12 @@ type Type interface {
 	NewStruct() Struct
 
 	Value() interface{}
+}
+
+type TypeAlternator interface {
+	// stringify with alternative package name.
+	// e.g. time.Time => timeAlt.Time
+	StringWithPkgName(pkgName string) string
 }
 
 func TableName(strct Struct) string {
