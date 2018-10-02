@@ -4,13 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
-	"go/importer"
 	"path/filepath"
 	"strings"
-)
-
-var (
-	SrcImporter = importer.For("source", nil)
 )
 
 type VisitorFunc func(ast.Node) ast.Visitor
@@ -120,7 +115,7 @@ func AssumeImport(dir string) (pkgName string, pkgPath string) {
 		panic(fmt.Sprintf("goen: unable to make absolute directory path %q: %s", dir, err))
 	}
 
-	bpkg, err := build.ImportDir(absdir, build.ImportComment)
+	bpkg, err := bImportDir(absdir, build.ImportComment)
 	if err == nil {
 		return bpkg.Name, bpkg.ImportPath
 	} else if _, ok := err.(*build.NoGoError); !ok {

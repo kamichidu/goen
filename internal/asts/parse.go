@@ -15,7 +15,7 @@ func ParsePkgPath(pkgPath string) (*ast.Package, error) {
 		return nil, err
 	}
 	// resolve directory of pkg path
-	bpkg, err := build.Default.Import(tpkg.Path(), ".", build.FindOnly)
+	bpkg, err := bImport(tpkg.Path(), ".", build.FindOnly)
 	if err != nil {
 		return nil, err
 	}
