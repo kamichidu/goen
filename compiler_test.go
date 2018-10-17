@@ -13,7 +13,7 @@ func TestPatchCompilerFunc(t *testing.T) {
 	}))
 }
 
-func TestBulkInsertCompiler(t *testing.T) {
+func TestBulkCompiler(t *testing.T) {
 	cases := []struct {
 		Patches  []*Patch
 		Sqlizers []sqr.Sqlizer
