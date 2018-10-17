@@ -2,6 +2,18 @@
 
 set -e -u
 
+function usage_exit()
+{
+    local code="$1"
+    local prog="$(basename "$0")"
+    echo "Usage: ${prog} {version}" 1>&2
+    exit "$code"
+}
+
+if [[ -z "${1+xxx}" ]]; then
+    usage_exit 128
+fi
+
 version="$1"
 
 basedir="$(dirname "$(dirname "$0")")"
