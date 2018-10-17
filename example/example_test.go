@@ -351,7 +351,26 @@ func Example_nullableColumn() {
 		panic(err)
 	}
 
-	posts, err := dbc.Post.Select().OrderBy(dbc.Post.Title.Asc()).Query()
+	fmt.Println("print all rows")
+	posts, err := dbc.Post.Select().
+		OrderBy(dbc.Post.Title.Asc()).
+		Query()
+	if err != nil {
+		panic(err)
+	}
+	for _, post := range posts {
+		if post.DeletedAt != nil {
+			fmt.Printf("%q > DeletedAt = %q\n", post.Title, post.DeletedAt.Format(time.RFC3339))
+		} else {
+			fmt.Printf("%q > DeletedAt = nil\n", post.Title)
+		}
+	}
+
+	fmt.Println("print filtered rows that deleted at is null")
+	posts, err = dbc.Post.Select().
+		Where(dbc.Post.DeletedAt.Eq(nil)).
+		OrderBy(dbc.Post.Title.Asc()).
+		Query()
 	if err != nil {
 		panic(err)
 	}
@@ -364,6 +383,9 @@ func Example_nullableColumn() {
 	}
 
 	// Output:
+	// print all rows
 	// "p1" > DeletedAt = "2018-08-09T13:48:29Z"
+	// "p2" > DeletedAt = nil
+	// print filtered rows that deleted at is null
 	// "p2" > DeletedAt = nil
 }

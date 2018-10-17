@@ -8,9 +8,9 @@ import (
 	"log"
 	"reflect"
 
+	sqr "github.com/Masterminds/squirrel"
 	"github.com/kamichidu/goen/dialect"
 	"github.com/kamichidu/goen/internal"
-	sqr "gopkg.in/Masterminds/squirrel.v1"
 )
 
 // DBContext holds *sql.DB (and *sql.Tx) with contextual values.

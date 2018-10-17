@@ -5,7 +5,7 @@ package goen
 import (
 	"container/list"
 
-	"gopkg.in/Masterminds/squirrel.v1"
+	"github.com/Masterminds/squirrel"
 )
 
 // PatchList is typed version of list.List

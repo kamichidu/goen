@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
+	sqr "github.com/Masterminds/squirrel"
 	"github.com/kamichidu/goen"
-	sqr "gopkg.in/Masterminds/squirrel.v1"
 )
 
 type dialect struct{}

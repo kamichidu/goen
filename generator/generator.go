@@ -3,8 +3,6 @@ package generator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kamichidu/goen/internal"
-	"github.com/kamichidu/goen/internal/asts"
 	"go/ast"
 	"go/build"
 	"go/parser"
@@ -16,6 +14,9 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/kamichidu/goen/internal"
+	"github.com/kamichidu/goen/internal/asts"
 )
 
 var requiredImports = []*Import{
@@ -26,7 +27,7 @@ var requiredImports = []*Import{
 		Path: "database/sql",
 	},
 	&Import{
-		Path: "gopkg.in/Masterminds/squirrel.v1",
+		Path: "github.com/Masterminds/squirrel",
 	},
 	&Import{
 		Path: "github.com/kamichidu/goen",

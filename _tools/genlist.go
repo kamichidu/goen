@@ -185,7 +185,7 @@ func main() {
 	buf := new(bytes.Buffer)
 	genHeader(buf, []string{
 		"container/list",
-		"gopkg.in/Masterminds/squirrel.v1",
+		"github.com/Masterminds/squirrel",
 	})
 	replacers := []replacer{
 		replacer{

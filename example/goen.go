@@ -9,9 +9,9 @@ import (
 	"database/sql"
 	time "time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/kamichidu/goen"
 	github_com_satori_go_uuid "github.com/satori/go.uuid"
-	"gopkg.in/Masterminds/squirrel.v1"
 )
 
 var metaSchema = new(goen.MetaSchema)

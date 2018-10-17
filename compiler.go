@@ -1,7 +1,7 @@
 package goen
 
 import (
-	sqr "gopkg.in/Masterminds/squirrel.v1"
+	sqr "github.com/Masterminds/squirrel"
 	"reflect"
 )
 

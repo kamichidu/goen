@@ -2,8 +2,9 @@ package dialect
 
 import (
 	"database/sql"
-	sqr "gopkg.in/Masterminds/squirrel.v1"
 	"reflect"
+
+	sqr "github.com/Masterminds/squirrel"
 )
 
 type Dialect interface {

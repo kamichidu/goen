@@ -1,8 +1,9 @@
 package goen
 
 import (
-	sqr "gopkg.in/Masterminds/squirrel.v1"
 	"sort"
+
+	sqr "github.com/Masterminds/squirrel"
 )
 
 type RowKey interface {

@@ -3,8 +3,8 @@ package goen
 import (
 	"testing"
 
+	sqr "github.com/Masterminds/squirrel"
 	"github.com/stretchr/testify/assert"
-	sqr "gopkg.in/Masterminds/squirrel.v1"
 )
 
 func TestPatchCompilerFunc(t *testing.T) {
