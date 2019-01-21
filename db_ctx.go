@@ -102,6 +102,18 @@ func (dbc *DBContext) Patch(v *Patch) {
 	dbc.patchBuffer.PushBack(v)
 }
 
+func (dbc *DBContext) QuerySqlizer(sqlizer sqr.Sqlizer) (*sql.Rows, error) {
+	return dbc.QuerySqlizerContext(context.Background(), sqlizer)
+}
+
+func (dbc *DBContext) QuerySqlizerContext(ctx context.Context, sqlizer sqr.Sqlizer) (*sql.Rows, error) {
+	query, args, err := sqlizer.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	return dbc.QueryContext(ctx, query, args...)
+}
+
 func (dbc *DBContext) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return dbc.QueryContext(context.Background(), query, args...)
 }
@@ -111,6 +123,18 @@ func (dbc *DBContext) QueryContext(ctx context.Context, query string, args ...in
 		dbc.debugPrintf("goen: %q with %v", query, args)
 	}
 	return dbc.QueryRunner.QueryContext(ctx, query, args...)
+}
+
+func (dbc *DBContext) QueryRowSqlizer(sqlizer sqr.Sqlizer) *sql.Row {
+	return dbc.QueryRowSqlizerContext(context.Background(), sqlizer)
+}
+
+func (dbc *DBContext) QueryRowSqlizerContext(ctx context.Context, sqlizer sqr.Sqlizer) *sql.Row {
+	query, args, err := sqlizer.ToSql()
+	if err != nil {
+		panic(fmt.Sprintf("goen: sqlizer.ToSql returns error: %v", err))
+	}
+	return dbc.QueryRowContext(ctx, query, args...)
 }
 
 func (dbc *DBContext) QueryRow(query string, args ...interface{}) *sql.Row {

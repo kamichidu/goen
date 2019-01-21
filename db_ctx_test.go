@@ -6,6 +6,7 @@ import (
 	"log"
 	"testing"
 
+	sqr "github.com/Masterminds/squirrel"
 	"github.com/kamichidu/goen"
 	_ "github.com/kamichidu/goen/dialect/sqlite3"
 	_ "github.com/mattn/go-sqlite3"
@@ -266,5 +267,36 @@ func TestDBContext(t *testing.T) {
 			assert.IsType(t, (*goen.StmtCacher)(nil), txc.QueryRunner,
 				"txc.QueryRunner is *goen.StmtCacher")
 		})
+	})
+	t.Run("QuerySqlizer", func(t *testing.T) {
+		dbc := goen.NewDBContext("sqlite3", db)
+		rows, err := dbc.QuerySqlizer(sqr.Expr(`select ? as n`, 99))
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer rows.Close()
+
+		var records []struct {
+			N int64 `column:"n"`
+		}
+		err = dbc.Scan(rows, &records)
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, records, 1) {
+			return
+		}
+		assert.EqualValues(t, 99, records[0].N)
+	})
+	t.Run("QueryRowSqlizer", func(t *testing.T) {
+		dbc := goen.NewDBContext("sqlite3", db)
+		row := dbc.QueryRowSqlizer(sqr.Expr(`select ? as n`, 99))
+
+		var n int64
+		err := row.Scan(&n)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.EqualValues(t, 99, n)
 	})
 }
