@@ -176,6 +176,20 @@ func (qb BlogQueryBuilder) query(ctx context.Context) ([]*Blog, error) {
 	return records, nil
 }
 
+// ToSqlizer returns Sqlizer that built by BlogQueryBuilder with given columns.
+// The columns defaults to all columns of Blog, if columns is zero-length.
+func (qb BlogQueryBuilder) ToSqlizer(columns ...string) BlogSqlizer {
+	if len(columns) == 0 {
+		metaT := metaSchema.LoadOf(&Blog{})
+		columns = make([]string, len(metaT.Columns))
+		for i := range metaT.Columns {
+			columns[i] = metaT.Columns[i].ColumnName
+		}
+	}
+	// return only, not set qb.builder.
+	return &_BlogSqlizer{qb.builder.Columns(columns...)}
+}
+
 type _Blog_BlogID_OrderExpr string
 
 func (s _Blog_BlogID_OrderExpr) BlogOrderExpr() string {
@@ -674,6 +688,20 @@ func (qb PostQueryBuilder) query(ctx context.Context) ([]*Post, error) {
 	}
 
 	return records, nil
+}
+
+// ToSqlizer returns Sqlizer that built by PostQueryBuilder with given columns.
+// The columns defaults to all columns of Post, if columns is zero-length.
+func (qb PostQueryBuilder) ToSqlizer(columns ...string) PostSqlizer {
+	if len(columns) == 0 {
+		metaT := metaSchema.LoadOf(&Post{})
+		columns = make([]string, len(metaT.Columns))
+		for i := range metaT.Columns {
+			columns[i] = metaT.Columns[i].ColumnName
+		}
+	}
+	// return only, not set qb.builder.
+	return &_PostSqlizer{qb.builder.Columns(columns...)}
 }
 
 type _Post_CreatedAt_OrderExpr string

@@ -3,6 +3,7 @@ package example
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -400,6 +401,8 @@ func Example_queryBuilderAsSqlizer() {
 	if err != nil {
 		panic(err)
 	}
+	// for stable output
+	query = strings.Replace(query, "$1", "?", -1)
 	fmt.Printf("%q\n", query)
 	fmt.Printf("%q\n", args)
 
