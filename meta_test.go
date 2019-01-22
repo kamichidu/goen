@@ -58,7 +58,7 @@ type Text struct {
 }
 
 func TestMetaSchema(t *testing.T) {
-	meta := new(MetaSchema)
+	meta := NewMetaSchema()
 	meta.Register(Blog{})
 	meta.Register(Post{})
 	meta.Register(Text{})
@@ -189,63 +189,63 @@ func TestMetaSchema(t *testing.T) {
 		meta := meta.LoadOf(new(Blog))
 		typ := reflect.TypeOf(Blog{})
 		assert.Equal(t, &metaTable{
-			Typ:       typ,
-			TableName: "blogs",
-			PrimaryKey: []*metaColumn{
+			typ:       typ,
+			tableName: "blogs",
+			primaryKey: []MetaColumn{
 				&metaColumn{
-					Field:            mustFieldByName(typ, "IDInt"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_int",
+					field:            mustFieldByName(typ, "IDInt"),
+					partOfPrimaryKey: true,
+					columnName:       "id_int",
 				},
 				&metaColumn{
-					Field:            mustFieldByName(typ, "IDString"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_string",
+					field:            mustFieldByName(typ, "IDString"),
+					partOfPrimaryKey: true,
+					columnName:       "id_string",
 				},
 				&metaColumn{
-					Field:            mustFieldByName(typ, "IDTextID"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_text_id",
+					field:            mustFieldByName(typ, "IDTextID"),
+					partOfPrimaryKey: true,
+					columnName:       "id_text_id",
 				},
 				&metaColumn{
-					Field:            mustFieldByName(typ, "IDBlobID"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_blob_id",
-				},
-			},
-			Columns: []*metaColumn{
-				&metaColumn{
-					Field:            mustFieldByName(typ, "IDInt"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_int",
-				},
-				&metaColumn{
-					Field:            mustFieldByName(typ, "IDString"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_string",
-				},
-				&metaColumn{
-					Field:            mustFieldByName(typ, "IDTextID"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_text_id",
-				},
-				&metaColumn{
-					Field:            mustFieldByName(typ, "IDBlobID"),
-					PartOfPrimaryKey: true,
-					ColumnName:       "id_blob_id",
-				},
-				&metaColumn{
-					Field:            mustFieldByName(typ, "Name"),
-					PartOfPrimaryKey: false,
-					ColumnName:       "name",
+					field:            mustFieldByName(typ, "IDBlobID"),
+					partOfPrimaryKey: true,
+					columnName:       "id_blob_id",
 				},
 			},
-			RefecenceKeys: [][]*metaColumn{
-				[]*metaColumn{
+			columns: []MetaColumn{
+				&metaColumn{
+					field:            mustFieldByName(typ, "IDInt"),
+					partOfPrimaryKey: true,
+					columnName:       "id_int",
+				},
+				&metaColumn{
+					field:            mustFieldByName(typ, "IDString"),
+					partOfPrimaryKey: true,
+					columnName:       "id_string",
+				},
+				&metaColumn{
+					field:            mustFieldByName(typ, "IDTextID"),
+					partOfPrimaryKey: true,
+					columnName:       "id_text_id",
+				},
+				&metaColumn{
+					field:            mustFieldByName(typ, "IDBlobID"),
+					partOfPrimaryKey: true,
+					columnName:       "id_blob_id",
+				},
+				&metaColumn{
+					field:            mustFieldByName(typ, "Name"),
+					partOfPrimaryKey: false,
+					columnName:       "name",
+				},
+			},
+			referenceKeys: [][]MetaColumn{
+				[]MetaColumn{
 					&metaColumn{
-						Field:            mustFieldByName(typ, "IDString"),
-						PartOfPrimaryKey: true,
-						ColumnName:       "id_string",
+						field:            mustFieldByName(typ, "IDString"),
+						partOfPrimaryKey: true,
+						columnName:       "id_string",
 					},
 				},
 			},

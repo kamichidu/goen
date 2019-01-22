@@ -2,6 +2,7 @@ package goen
 
 import (
 	sqr "github.com/Masterminds/squirrel"
+	"github.com/kamichidu/goen/dialect"
 	"reflect"
 )
 
@@ -12,7 +13,7 @@ var (
 )
 
 type CompilerOptions struct {
-	StmtBuilder sqr.StatementBuilderType
+	Dialect dialect.Dialect
 
 	Patches *PatchList
 }
@@ -28,6 +29,30 @@ func (fn PatchCompilerFunc) Compile(opts *CompilerOptions) (sqlizers *SqlizerLis
 }
 
 func compilePatch(opts *CompilerOptions) (sqlizers *SqlizerList) {
+	stmtBuilder := sqr.StatementBuilder
+	if opts.Dialect != nil {
+		stmtBuilder = stmtBuilder.PlaceholderFormat(opts.Dialect.PlaceholderFormat())
+	}
+	quote := func(s string) string {
+		if opts.Dialect != nil {
+			s = opts.Dialect.Quote(s)
+		}
+		return s
+	}
+	quoteList := func(l []string) []string {
+		out := make([]string, len(l))
+		for i := range l {
+			out[i] = quote(l[i])
+		}
+		return out
+	}
+	rowKeyWithDialect := func(v RowKey) sqr.Sqlizer {
+		if opts.Dialect != nil {
+			return v.ToSqlizerWithDialect(opts.Dialect)
+		} else {
+			return v
+		}
+	}
 	sqlizers = NewSqlizerList()
 	for curr := opts.Patches.Front(); curr != nil; curr = curr.Next() {
 		patch := curr.GetValue()
@@ -37,22 +62,22 @@ func compilePatch(opts *CompilerOptions) (sqlizers *SqlizerList) {
 		var sqlizer sqr.Sqlizer
 		switch patch.Kind {
 		case PatchInsert:
-			sqlizer = opts.StmtBuilder.Insert(patch.TableName).
-				Columns(patch.Columns...).
+			sqlizer = stmtBuilder.Insert(quote(patch.TableName)).
+				Columns(quoteList(patch.Columns)...).
 				Values(patch.Values...)
 		case PatchUpdate:
-			stmt := opts.StmtBuilder.Update(patch.TableName)
+			stmt := stmtBuilder.Update(quote(patch.TableName))
 			for i := range patch.Columns {
-				stmt = stmt.Set(patch.Columns[i], patch.Values[i])
+				stmt = stmt.Set(quote(patch.Columns[i]), patch.Values[i])
 			}
 			if patch.RowKey != nil {
-				stmt = stmt.Where(patch.RowKey)
+				stmt = stmt.Where(rowKeyWithDialect(patch.RowKey))
 			}
 			sqlizer = stmt
 		case PatchDelete:
-			stmt := opts.StmtBuilder.Delete(patch.TableName)
+			stmt := stmtBuilder.Delete(quote(patch.TableName))
 			if patch.RowKey != nil {
-				stmt = stmt.Where(patch.RowKey)
+				stmt = stmt.Where(rowKeyWithDialect(patch.RowKey))
 			}
 			sqlizer = stmt
 		default:
@@ -66,6 +91,30 @@ func compilePatch(opts *CompilerOptions) (sqlizers *SqlizerList) {
 type bulkCompiler struct{}
 
 func (compiler *bulkCompiler) Compile(opts *CompilerOptions) (sqlizers *SqlizerList) {
+	stmtBuilder := sqr.StatementBuilder
+	if opts.Dialect != nil {
+		stmtBuilder = stmtBuilder.PlaceholderFormat(opts.Dialect.PlaceholderFormat())
+	}
+	quote := func(s string) string {
+		if opts.Dialect != nil {
+			s = opts.Dialect.Quote(s)
+		}
+		return s
+	}
+	quoteList := func(l []string) []string {
+		out := make([]string, len(l))
+		for i := range l {
+			out[i] = quote(l[i])
+		}
+		return out
+	}
+	rowKeyWithDialect := func(v RowKey) sqr.Sqlizer {
+		if opts.Dialect != nil {
+			return v.ToSqlizerWithDialect(opts.Dialect)
+		} else {
+			return v
+		}
+	}
 	sqlizers = NewSqlizerList()
 	for curr := opts.Patches.Front(); curr != nil; curr = curr.Next() {
 		patch := curr.GetValue()
@@ -75,47 +124,47 @@ func (compiler *bulkCompiler) Compile(opts *CompilerOptions) (sqlizers *SqlizerL
 
 		switch patch.Kind {
 		case PatchInsert:
-			stmt := opts.StmtBuilder.Insert(patch.TableName).Columns(patch.Columns...).Values(patch.Values...)
+			stmt := stmtBuilder.Insert(quote(patch.TableName)).Columns(quoteList(patch.Columns)...).Values(patch.Values...)
 			for curr.Next() != nil && compiler.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
 				stmt = stmt.Values(curr.GetValue().Values...)
 			}
 			sqlizers.PushBack(stmt)
 		case PatchDelete:
-			stmt := opts.StmtBuilder.Delete(patch.TableName)
+			stmt := stmtBuilder.Delete(quote(patch.TableName))
 			cond := sqr.Or{}
 			if patch.RowKey != nil {
-				cond = append(cond, patch.RowKey)
+				cond = append(cond, rowKeyWithDialect(patch.RowKey))
 			}
 			for curr.Next() != nil && compiler.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
 				if np := curr.GetValue(); np.RowKey != nil {
-					cond = append(cond, np.RowKey)
+					cond = append(cond, rowKeyWithDialect(np.RowKey))
 				}
 			}
 			stmt = stmt.Where(cond)
 			sqlizers.PushBack(stmt)
 		case PatchUpdate:
-			stmt := opts.StmtBuilder.Update(patch.TableName)
+			stmt := stmtBuilder.Update(quote(patch.TableName))
 			for i := range patch.Columns {
-				stmt = stmt.Set(patch.Columns[i], patch.Values[i])
+				stmt = stmt.Set(quote(patch.Columns[i]), patch.Values[i])
 			}
 			cond := sqr.Or{}
 			if patch.RowKey != nil {
-				cond = append(cond, patch.RowKey)
+				cond = append(cond, rowKeyWithDialect(patch.RowKey))
 			}
 			for curr.Next() != nil && compiler.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
 				if np := curr.GetValue(); np.RowKey != nil {
-					cond = append(cond, np.RowKey)
+					cond = append(cond, rowKeyWithDialect(np.RowKey))
 				}
 			}
 			stmt = stmt.Where(cond)
 			sqlizers.PushBack(stmt)
 		default:
 			fallbackOpts := &CompilerOptions{
-				StmtBuilder: opts.StmtBuilder,
-				Patches:     NewPatchList(),
+				Dialect: opts.Dialect,
+				Patches: NewPatchList(),
 			}
 			fallbackOpts.Patches.PushBack(patch)
 			sqlizers.PushBackList(DefaultCompiler.Compile(fallbackOpts))

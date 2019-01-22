@@ -48,8 +48,6 @@ type DBContext struct {
 	debug bool
 
 	patchBuffer *PatchList
-
-	stmtBuilder sqr.StatementBuilderType
 }
 
 // NewDBContext creates DBContext with given dialectName and db.
@@ -66,7 +64,6 @@ func NewDBContext(dialectName string, db *sql.DB) *DBContext {
 		QueryRunner:     db,
 		dialect:         dialect,
 		patchBuffer:     NewPatchList(),
-		stmtBuilder:     sqr.StatementBuilder.PlaceholderFormat(dialect.PlaceholderFormat()),
 	}
 }
 
@@ -200,8 +197,8 @@ func (dbc *DBContext) CompilePatch() *SqlizerList {
 		compiler = DefaultCompiler
 	}
 	opts := &CompilerOptions{
-		StmtBuilder: dbc.stmtBuilder,
-		Patches:     &patches,
+		Dialect: dbc.Dialect(),
+		Patches: &patches,
 	}
 	return compiler.Compile(opts)
 }

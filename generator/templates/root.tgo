@@ -10,7 +10,7 @@ import (
     {{ end -}}
 )
 
-var metaSchema = new(goen.MetaSchema)
+var metaSchema = goen.NewMetaSchema()
 
 {{ range $table := $.Tables }}
 {{ template "table.tgo" $table }}

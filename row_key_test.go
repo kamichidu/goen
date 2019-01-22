@@ -33,4 +33,9 @@ func TestMapRowKey(t *testing.T) {
 		"b": 1,
 		"c": 0,
 	}, rkey.toEq())
+	assert.Equal(t, sqr.Eq{
+		`"a"`: 2,
+		`"b"`: 1,
+		`"c"`: 0,
+	}, rkey.ToSqlizerWithDialect(new(testingDialect)))
 }

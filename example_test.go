@@ -45,7 +45,7 @@ func Example_bulkOperation() {
 		panic(err)
 	}
 	// Output:
-	// goen: "INSERT INTO testing (name) VALUES (?),(?),(?)" with [name-0 name-1 name-2]
+	// goen: "INSERT INTO `testing` (`name`) VALUES (?),(?),(?)" with [name-0 name-1 name-2]
 }
 
 func Example_queryCount() {

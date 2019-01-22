@@ -25,6 +25,7 @@ create table posts (
 	post_id serial not null primary key,
 	title varchar not null,
 	content varchar not null,
+	"order" integer,
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
 	deleted_at timestamp with time zone,

@@ -46,7 +46,7 @@ func new{{ $queryType }}(dbc *goen.DBContext) {{ $queryType }} {
     return {{ $queryType }}{
         dbc: dbc,
         // columns provided later
-        builder: stmtBuilder.Select().From(metaT.TableName),
+        builder: stmtBuilder.Select().From(dbc.Dialect().Quote(metaT.TableName())),
     }
 }
 
@@ -132,9 +132,9 @@ func (qb {{ $queryType }}) QueryRowContext(ctx context.Context) (*{{ $.Entity }}
 func (qb {{ $queryType }}) query(ctx context.Context) ([]*{{ $.Entity }}, error) {
     // for caching reason, wont support filtering columns
     metaT := metaSchema.LoadOf(&{{ $.Entity }}{})
-    cols := make([]string, len(metaT.Columns))
-    for i := range metaT.Columns {
-        cols[i] = metaT.Columns[i].ColumnName
+    cols := make([]string, len(metaT.Columns()))
+    for i := range metaT.Columns() {
+        cols[i] = qb.dbc.Dialect().Quote(metaT.Columns()[i].ColumnName())
     }
 
     query, args, err := qb.builder.Columns(cols...).ToSql()
@@ -169,12 +169,12 @@ func (qb {{ $queryType }}) query(ctx context.Context) ([]*{{ $.Entity }}, error)
 func (qb {{ $queryType }}) ToSqlizer(columns ...string) {{ $sqlizerType }} {
     if len(columns) == 0 {
         metaT := metaSchema.LoadOf(&{{ $.Entity }}{})
-        columns = make([]string, len(metaT.Columns))
-        for i := range metaT.Columns {
-            columns[i] = metaT.Columns[i].ColumnName
+        columns = make([]string, len(metaT.Columns()))
+        for i := range metaT.Columns() {
+            columns[i] = qb.dbc.Dialect().Quote(metaT.Columns()[i].ColumnName())
         }
     }
-    // return only, not set qb.builder.
+    // only return, not to set qb.builder.
     return &{{ $sqlizerImpl}}{qb.builder.Columns(columns...)}
 }
 
@@ -191,68 +191,70 @@ func (s {{ $columnOrderType }}) {{ $.Entity }}OrderExpr() string {
 
 type {{ $typ }} string
 
+// {{ $.Entity }}ColumnExpr implements {{ $columnOrderType }}.
 func (c {{ $typ }}) {{ $.Entity }}ColumnExpr() string {
-    return string(c)
+    return c.String()
 }
 
+// String gets quoted column name.
 func (c {{ $typ }}) String() string {
     return string(c)
 }
 
 func (c {{ $typ }}) Eq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Eq{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Eq{c.String(): v}}
 }
 
 func (c {{ $typ }}) NotEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.NotEq{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{c.String(): v}}
 }
 
 func (c {{ $typ }}) In(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Eq{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Eq{c.String(): v}}
 }
 
 func (c {{ $typ }}) NotIn(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.NotEq{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{c.String(): v}}
 }
 
 func (c {{ $typ }}) Like(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " LIKE ?", v)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " LIKE ?", v)}
 }
 
 func (c {{ $typ }}) NotLike(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " NOT LIKE ?", v)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " NOT LIKE ?", v)}
 }
 
 func (c {{ $typ }}) Lt(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Lt{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Lt{c.String(): v}}
 }
 
 func (c {{ $typ }}) LtOrEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.LtOrEq{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.LtOrEq{c.String(): v}}
 }
 
 func (c {{ $typ }}) Gt(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Gt{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Gt{c.String(): v}}
 }
 
 func (c {{ $typ }}) GtOrEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.GtOrEq{string(c): v}}
+    return &{{ $sqlizerImpl}}{squirrel.GtOrEq{c.String(): v}}
 }
 
 func (c {{ $typ }}) Between(v1, v2 {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " BETWEEN ? AND ?", v1, v2)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c {{ $typ }}) NotBetween(v1, v2 {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(string(c) + " NOT BETWEEN ? AND ?", v1, v2)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " NOT BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c {{ $typ }}) Asc() {{ $orderType }} {
-    return {{ $columnOrderType }}(string(c))
+    return {{ $columnOrderType }}(c.String())
 }
 
 func (c {{ $typ }}) Desc() {{ $orderType }} {
-    return {{ $columnOrderType }}(string(c) + " DESC")
+    return {{ $columnOrderType }}(c.String() + " DESC")
 }
 
 {{ end }}
@@ -263,7 +265,7 @@ type {{ $dbsetType }} struct {
     dbc *goen.DBContext
 
     {{ range $column := $.Columns -}}
-    {{ $typ := printf "_%s_%s" $.Entity $column.FieldName }}
+    {{ $typ := printf "_%s_%s" $.Entity $column.FieldName -}}
     {{ $column.FieldName }} {{ $typ }}
     {{ end }}
 
@@ -283,7 +285,8 @@ func new{{ $dbsetType }}(dbc *goen.DBContext) *{{ $dbsetType }} {
         dbc: dbc,
     }
     {{ range $column := $.Columns -}}
-    dbset.{{ $column.FieldName }} = "{{ $column.ColumnName }}"
+    {{ $typ := printf "_%s_%s" $.Entity $column.FieldName -}}
+    dbset.{{ $column.FieldName }} = {{ $typ }}(dbc.Dialect().Quote("{{ $column.ColumnName }}"))
     {{ end }}
     {{ range $rel := $.OneToManyRelations }}
     dbset.Include{{ $rel.FieldName }} = goen.IncludeLoaderFunc(dbset.include{{ $rel.FieldName }})
@@ -298,7 +301,7 @@ func new{{ $dbsetType }}(dbc *goen.DBContext) *{{ $dbsetType }} {
 }
 
 func (dbset *{{ $dbsetType }}) String() string {
-    return "{{ $.TableName }}"
+    return dbset.dbc.Dialect().Quote("{{ $.TableName }}")
 }
 
 {{ if not $.ReadOnly }}
@@ -363,9 +366,9 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
         stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbset.dbc.Dialect().PlaceholderFormat())
         query, args, err := stmtBuilder.Select(
             {{ range $name := $rel.ColumnNames -}}
-            "{{ $name }}",
+            dbset.dbc.Dialect().Quote("{{ $name }}"),
             {{ end -}}
-            ).From("{{ $rel.TableName }}").Where(cond).ToSql()
+            ).From(dbset.dbc.Dialect().Quote("{{ $rel.TableName }}")).Where(cond).ToSql()
         if err != nil {
             return err
         }
@@ -447,9 +450,9 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
         stmtBuilder := squirrel.StatementBuilder.PlaceholderFormat(dbset.dbc.Dialect().PlaceholderFormat())
         query, args, err := stmtBuilder.Select(
             {{ range $name := $rel.ColumnNames -}}
-            "{{ $name }}",
+            dbset.dbc.Dialect().Quote("{{ $name }}"),
             {{ end -}}
-            ).From("{{ $rel.TableName }}").Where(cond).ToSql()
+            ).From(dbset.dbc.Dialect().Quote("{{ $rel.TableName }}")).Where(cond).ToSql()
         if err != nil {
             return err
         }

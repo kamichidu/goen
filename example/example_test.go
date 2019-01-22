@@ -110,11 +110,11 @@ func Example() {
 	// all blogs = 3
 	// found blogs = 2
 	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
-	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Order:(int)0 Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
 	//   DeletedAt:nil
-	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Order:(int)0 Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
 	//   DeletedAt:nil
@@ -205,10 +205,10 @@ func Example_queryRow() {
 	// Output:
 	// QueryRow returns sql.ErrNoRows when a record was not found.
 	// (*example.Blog){BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 Name:(string)testing1 Author:(string)kamichidu Posts:([]*example.Post)[<max>]}
-	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Blog:(*example.Blog){<max>}}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)1 Title:(string)titleA Content:(string)contentA Order:(int)0 Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
-	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Blog:(*example.Blog){<max>}}
+	// - (*example.Post){Timestamp:(example.Timestamp){<max>} BlogID:(uuid.UUID)d03bc237-eef4-4b6f-afe1-ea901357d828 PostID:(int)2 Title:(string)titleB Content:(string)contentB Order:(int)0 Blog:(*example.Blog){<max>}}
 	//   CreatedAt:"2018-06-01T12:00:00Z"
 	//   UpdatedAt:"2018-06-01T12:00:00Z"
 }
@@ -249,17 +249,19 @@ func Example_count() {
 }
 
 func Example_generatedSchemaFields() {
-	dbc := NewDBContext(dialectName, nil)
+	// for stable output
+	dbc := NewDBContext("sqlite3", nil)
 
+	// can get quoted names
 	fmt.Printf("dbc.Blog.String() = %q\n", dbc.Blog.String())
 	fmt.Printf("dbc.Blog.BlogID = %q\n", dbc.Blog.BlogID)
 	fmt.Printf("dbc.Blog.Name = %q\n", dbc.Blog.Name)
 	fmt.Printf("dbc.Blog.Author = %q\n", dbc.Blog.Author)
 	// Output:
-	// dbc.Blog.String() = "blogs"
-	// dbc.Blog.BlogID = "blog_id"
-	// dbc.Blog.Name = "name"
-	// dbc.Blog.Author = "author"
+	// dbc.Blog.String() = "`blogs`"
+	// dbc.Blog.BlogID = "`blog_id`"
+	// dbc.Blog.Name = "`name`"
+	// dbc.Blog.Author = "`author`"
 }
 
 func Example_transaction() {
@@ -403,10 +405,11 @@ func Example_queryBuilderAsSqlizer() {
 	}
 	// for stable output
 	query = strings.Replace(query, "$1", "?", -1)
+	query = strings.Replace(query, `"`, "`", -1)
 	fmt.Printf("%q\n", query)
 	fmt.Printf("%q\n", args)
 
 	// Output:
-	// "SELECT blog_id FROM blogs WHERE author = ?"
+	// "SELECT `blog_id` FROM `blogs` WHERE `author` = ?"
 	// ["kamichidu"]
 }

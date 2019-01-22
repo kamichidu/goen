@@ -25,7 +25,7 @@ type User struct {
 }
 
 func TestScopeCache(t *testing.T) {
-	meta := &MetaSchema{}
+	meta := NewMetaSchema()
 	meta.Register(new(Email))
 	meta.Register(new(User))
 	meta.Compute()

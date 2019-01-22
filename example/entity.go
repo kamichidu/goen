@@ -27,6 +27,9 @@ type Post struct {
 
 	Content string
 
+	// "order" is a sql keyword
+	Order int
+
 	Blog *Blog `foreign_key:"blog_id"`
 }
 

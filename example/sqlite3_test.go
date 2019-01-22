@@ -24,6 +24,7 @@ create table posts (
 	post_id integer not null primary key,
 	title varchar not null,
 	content varchar not null,
+	"order" integer,
 	created_at datetime not null,
 	updated_at datetime not null,
 	deleted_at datetime,

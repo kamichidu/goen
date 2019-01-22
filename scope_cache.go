@@ -5,14 +5,14 @@ import (
 )
 
 type ScopeCache struct {
-	Meta *MetaSchema
+	Meta MetaSchema
 
 	mu sync.RWMutex
 
 	data map[string]interface{}
 }
 
-func NewScopeCache(meta *MetaSchema) *ScopeCache {
+func NewScopeCache(meta MetaSchema) *ScopeCache {
 	return &ScopeCache{
 		Meta: meta,
 		data: map[string]interface{}{},
