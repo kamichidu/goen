@@ -164,6 +164,20 @@ func (qb {{ $queryType }}) query(ctx context.Context) ([]*{{ $.Entity }}, error)
     return records, nil
 }
 
+// ToSqlizer returns Sqlizer that built by {{ $queryType }} with given columns.
+// The columns defaults to all columns of {{ $.Entity }}, if columns is zero-length.
+func (qb {{ $queryType }}) ToSqlizer(columns ...string) {{ $sqlizerType }} {
+    if len(columns) == 0 {
+        metaT := metaSchema.LoadOf(&{{ $.Entity }}{})
+        columns = make([]string, len(metaT.Columns))
+        for i := range metaT.Columns {
+            columns[i] = metaT.Columns[i].ColumnName
+        }
+    }
+    // return only, not set qb.builder.
+    return &{{ $sqlizerImpl}}{qb.builder.Columns(columns...)}
+}
+
 {{ range $column := $.Columns }}
 
 {{ $typ := printf "_%s_%s" $.Entity $column.FieldName }}

@@ -389,3 +389,21 @@ func Example_nullableColumn() {
 	// print filtered rows that deleted at is null
 	// "p2" > DeletedAt = nil
 }
+
+func Example_queryBuilderAsSqlizer() {
+	dbc := NewDBContext(prepareDB())
+
+	query, args, err := dbc.Blog.Select().
+		Where(dbc.Blog.Author.Eq("kamichidu")).
+		ToSqlizer(dbc.Blog.BlogID.String()).
+		ToSql()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%q\n", query)
+	fmt.Printf("%q\n", args)
+
+	// Output:
+	// "SELECT blog_id FROM blogs WHERE author = ?"
+	// ["kamichidu"]
+}
