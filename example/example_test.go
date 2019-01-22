@@ -249,14 +249,18 @@ func Example_count() {
 }
 
 func Example_generatedSchemaFields() {
+	dbc := NewDBContext(dialectName, nil)
+
 	// for stable output
-	dbc := NewDBContext("sqlite3", nil)
+	stableQuote := func(s interface{}) string {
+		return strings.Replace(fmt.Sprint(s), `"`, "`", -1)
+	}
 
 	// can get quoted names
-	fmt.Printf("dbc.Blog.String() = %q\n", dbc.Blog.String())
-	fmt.Printf("dbc.Blog.BlogID = %q\n", dbc.Blog.BlogID)
-	fmt.Printf("dbc.Blog.Name = %q\n", dbc.Blog.Name)
-	fmt.Printf("dbc.Blog.Author = %q\n", dbc.Blog.Author)
+	fmt.Printf("dbc.Blog.String() = %q\n", stableQuote(dbc.Blog.String()))
+	fmt.Printf("dbc.Blog.BlogID = %q\n", stableQuote(dbc.Blog.BlogID))
+	fmt.Printf("dbc.Blog.Name = %q\n", stableQuote(dbc.Blog.Name))
+	fmt.Printf("dbc.Blog.Author = %q\n", stableQuote(dbc.Blog.Author))
 	// Output:
 	// dbc.Blog.String() = "`blogs`"
 	// dbc.Blog.BlogID = "`blog_id`"
