@@ -189,6 +189,8 @@ func (dbc *DBContext) IncludeContext(ctx context.Context, v interface{}, sc *Sco
 	return nil
 }
 
+// CompilePatch compiles patches added by Patch() to SqlizerList.
+// When this function is called, will clear internal patch buffer.
 func (dbc *DBContext) CompilePatch() *SqlizerList {
 	patches := *dbc.patchBuffer
 	dbc.patchBuffer.Init()
