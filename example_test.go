@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/kamichidu/goen"
 	_ "github.com/kamichidu/goen/dialect/sqlite3"
 	_ "github.com/mattn/go-sqlite3"
@@ -251,4 +252,76 @@ func Example_cachingPreparedStatements() {
 	// cached statements 1
 	// 1 records found
 	// cached statements 2
+}
+
+type exampleHook struct {
+	PostInsertBuilderHandler func(squirrel.InsertBuilder) squirrel.Sqlizer
+	PostUpdateBuilderHandler func(squirrel.UpdateBuilder) squirrel.Sqlizer
+	PostDeleteBuilderHandler func(squirrel.DeleteBuilder) squirrel.Sqlizer
+}
+
+func (v *exampleHook) PostInsertBuilder(stmt squirrel.InsertBuilder) squirrel.Sqlizer {
+	if v.PostInsertBuilderHandler != nil {
+		return v.PostInsertBuilderHandler(stmt)
+	} else {
+		return stmt
+	}
+}
+
+func (v *exampleHook) PostUpdateBuilder(stmt squirrel.UpdateBuilder) squirrel.Sqlizer {
+	if v.PostUpdateBuilderHandler != nil {
+		return v.PostUpdateBuilderHandler(stmt)
+	} else {
+		return stmt
+	}
+}
+
+func (v *exampleHook) PostDeleteBuilder(stmt squirrel.DeleteBuilder) squirrel.Sqlizer {
+	if v.PostDeleteBuilderHandler != nil {
+		return v.PostDeleteBuilderHandler(stmt)
+	} else {
+		return stmt
+	}
+}
+
+func ExampleCompilerHook() {
+	db, err := sql.Open("sqlite3", "./sqlite.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	ddl := []string{
+		`drop table if exists testing`,
+		`create table testing (id integer primary key, name varchar(256))`,
+	}
+	if _, err := db.Exec(strings.Join(ddl, ";")); err != nil {
+		panic(err)
+	}
+
+	dbc := goen.NewDBContext("sqlite3", db)
+	dbc.Compiler = goen.CompilerWithHook(goen.DefaultCompiler, &exampleHook{
+		PostInsertBuilderHandler: func(stmt squirrel.InsertBuilder) squirrel.Sqlizer {
+			fmt.Println("PostInsertBuilder: hello")
+			return stmt
+		},
+		PostUpdateBuilderHandler: func(stmt squirrel.UpdateBuilder) squirrel.Sqlizer {
+			fmt.Println("PostUpdateBuilder: compiler")
+			return stmt
+		},
+		PostDeleteBuilderHandler: func(stmt squirrel.DeleteBuilder) squirrel.Sqlizer {
+			fmt.Println("PostDeleteBuilder: hook")
+			return stmt
+		},
+	})
+	dbc.Patch(goen.InsertPatch("testing", []string{"name"}, []interface{}{"ExampleCompilerHook"}))
+	dbc.Patch(goen.UpdatePatch("testing", []string{"name"}, []interface{}{"ExampleCompilerHook"}, nil))
+	dbc.Patch(goen.DeletePatch("testing", nil))
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+	// Output:
+	// PostInsertBuilder: hello
+	// PostUpdateBuilder: compiler
+	// PostDeleteBuilder: hook
 }

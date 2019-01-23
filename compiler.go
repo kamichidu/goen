@@ -13,14 +13,29 @@ var (
 	BulkCompiler PatchCompiler = &bulkCompiler{}
 )
 
+type CompilerHook interface {
+	PostInsertBuilder(sqr.InsertBuilder) sqr.Sqlizer
+	PostUpdateBuilder(sqr.UpdateBuilder) sqr.Sqlizer
+	PostDeleteBuilder(sqr.DeleteBuilder) sqr.Sqlizer
+}
+
 type CompilerOptions struct {
 	Dialect dialect.Dialect
 
 	Patches *PatchList
+
+	Hook CompilerHook
 }
 
 type PatchCompiler interface {
 	Compile(*CompilerOptions) *SqlizerList
+}
+
+func CompilerWithHook(c PatchCompiler, v CompilerHook) PatchCompiler {
+	return PatchCompilerFunc(func(opts *CompilerOptions) *SqlizerList {
+		opts.Hook = v
+		return c.Compile(opts)
+	})
 }
 
 type PatchCompilerFunc func(*CompilerOptions) *SqlizerList
@@ -62,6 +77,30 @@ func (opts *compilerOptionsUtils) RowKeyToSqlizer(rowKey RowKey) sqr.Sqlizer {
 	}
 }
 
+func (opts *compilerOptionsUtils) PostInsertBuilder(stmt sqr.InsertBuilder) sqr.Sqlizer {
+	if opts.Hook != nil {
+		return opts.Hook.PostInsertBuilder(stmt)
+	} else {
+		return stmt
+	}
+}
+
+func (opts *compilerOptionsUtils) PostUpdateBuilder(stmt sqr.UpdateBuilder) sqr.Sqlizer {
+	if opts.Hook != nil {
+		return opts.Hook.PostUpdateBuilder(stmt)
+	} else {
+		return stmt
+	}
+}
+
+func (opts *compilerOptionsUtils) PostDeleteBuilder(stmt sqr.DeleteBuilder) sqr.Sqlizer {
+	if opts.Hook != nil {
+		return opts.Hook.PostDeleteBuilder(stmt)
+	} else {
+		return stmt
+	}
+}
+
 type defaultCompiler struct{}
 
 func (*defaultCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList) {
@@ -78,7 +117,7 @@ func (*defaultCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList
 			stmt := stmtBuilder.Insert(opts.Quote(patch.TableName)).
 				Columns(opts.Quotes(patch.Columns)...).
 				Values(patch.Values...)
-			sqlizers.PushBack(stmt)
+			sqlizers.PushBack(opts.PostInsertBuilder(stmt))
 		case PatchUpdate:
 			stmt := stmtBuilder.Update(opts.Quote(patch.TableName))
 			for i := range patch.Columns {
@@ -87,13 +126,13 @@ func (*defaultCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList
 			if patch.RowKey != nil {
 				stmt = stmt.Where(opts.RowKeyToSqlizer(patch.RowKey))
 			}
-			sqlizers.PushBack(stmt)
+			sqlizers.PushBack(opts.PostUpdateBuilder(stmt))
 		case PatchDelete:
 			stmt := stmtBuilder.Delete(opts.Quote(patch.TableName))
 			if patch.RowKey != nil {
 				stmt = stmt.Where(opts.RowKeyToSqlizer(patch.RowKey))
 			}
-			sqlizers.PushBack(stmt)
+			sqlizers.PushBack(opts.PostDeleteBuilder(stmt))
 		default:
 			panic("goen: unable to make sql statement for unknown kind (" + string(patch.Kind) + ")")
 		}
@@ -120,7 +159,7 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 				curr = curr.Next()
 				stmt = stmt.Values(curr.GetValue().Values...)
 			}
-			sqlizers.PushBack(stmt)
+			sqlizers.PushBack(opts.PostInsertBuilder(stmt))
 		case PatchDelete:
 			stmt := stmtBuilder.Delete(opts.Quote(patch.TableName))
 			cond := sqr.Or{}
@@ -134,7 +173,7 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 				}
 			}
 			stmt = stmt.Where(cond)
-			sqlizers.PushBack(stmt)
+			sqlizers.PushBack(opts.PostDeleteBuilder(stmt))
 		case PatchUpdate:
 			stmt := stmtBuilder.Update(opts.Quote(patch.TableName))
 			for i := range patch.Columns {
@@ -151,12 +190,14 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 				}
 			}
 			stmt = stmt.Where(cond)
-			sqlizers.PushBack(stmt)
+			sqlizers.PushBack(opts.PostUpdateBuilder(stmt))
 		default:
 			fallbackOpts := &CompilerOptions{
 				Dialect: opts.Dialect,
 				Patches: NewPatchList(),
+				Hook:    opts.Hook,
 			}
+			// fallback a patch by patch, for keeping its order
 			fallbackOpts.Patches.PushBack(patch)
 			sqlizers.PushBackList(DefaultCompiler.Compile(fallbackOpts))
 		}
