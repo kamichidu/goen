@@ -11,6 +11,12 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+func unifyQuery(s string) string {
+	s = strings.Replace(s, "$1", "?", -1)
+	s = strings.Replace(s, `"`, "`", -1)
+	return s
+}
+
 func Example() {
 	dbc := NewDBContext(prepareDB())
 	dbc.DebugMode(true)
@@ -251,21 +257,34 @@ func Example_count() {
 func Example_generatedSchemaFields() {
 	dbc := NewDBContext(dialectName, nil)
 
-	// for stable output
-	stableQuote := func(s interface{}) string {
-		return strings.Replace(fmt.Sprint(s), `"`, "`", -1)
-	}
-
 	// can get quoted names
-	fmt.Printf("dbc.Blog.String() = %q\n", stableQuote(dbc.Blog.String()))
-	fmt.Printf("dbc.Blog.BlogID = %q\n", stableQuote(dbc.Blog.BlogID))
-	fmt.Printf("dbc.Blog.Name = %q\n", stableQuote(dbc.Blog.Name))
-	fmt.Printf("dbc.Blog.Author = %q\n", stableQuote(dbc.Blog.Author))
+	fmt.Printf("dbc.Blog = %s / %s\n", dbc.Blog, unifyQuery(dbc.Blog.QuotedString()))
+	fmt.Printf("dbc.Blog.BlogID = %s / %s\n", dbc.Blog.BlogID, unifyQuery(dbc.Blog.BlogID.QuotedString()))
+	fmt.Printf("dbc.Blog.Name = %s / %s\n", dbc.Blog.Name, unifyQuery(dbc.Blog.Name.QuotedString()))
+	fmt.Printf("dbc.Blog.Author = %s / %s\n", dbc.Blog.Author, unifyQuery(dbc.Blog.Author.QuotedString()))
 	// Output:
-	// dbc.Blog.String() = "`blogs`"
-	// dbc.Blog.BlogID = "`blog_id`"
-	// dbc.Blog.Name = "`name`"
-	// dbc.Blog.Author = "`author`"
+	// dbc.Blog = blogs / `blogs`
+	// dbc.Blog.BlogID = blog_id / `blog_id`
+	// dbc.Blog.Name = name / `name`
+	// dbc.Blog.Author = author / `author`
+}
+
+func Example_customDelete() {
+	dbc := NewDBContext(prepareDB())
+
+	// expect `delete from posts where blog_id = ?`
+	dbc.Patch(goen.DeletePatch(
+		dbc.Post.String(),
+		&goen.MapRowKey{
+			Table: dbc.Post.String(),
+			Key: map[string]interface{}{
+				dbc.Post.BlogID.String(): uuid.Must(uuid.FromString("d03bc237-eef4-4b6f-afe1-ea901357d828")),
+			},
+		}))
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+	// Output:
 }
 
 func Example_transaction() {
@@ -402,14 +421,13 @@ func Example_queryBuilderAsSqlizer() {
 
 	query, args, err := dbc.Blog.Select().
 		Where(dbc.Blog.Author.Eq("kamichidu")).
-		ToSqlizer(dbc.Blog.BlogID.String()).
+		ToSqlizer(dbc.Blog.BlogID.QuotedString()).
 		ToSql()
 	if err != nil {
 		panic(err)
 	}
 	// for stable output
-	query = strings.Replace(query, "$1", "?", -1)
-	query = strings.Replace(query, `"`, "`", -1)
+	query = unifyQuery(query)
 	fmt.Printf("%q\n", query)
 	fmt.Printf("%q\n", args)
 

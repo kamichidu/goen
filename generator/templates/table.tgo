@@ -189,72 +189,80 @@ func (s {{ $columnOrderType }}) {{ $.Entity }}OrderExpr() string {
     return string(s)
 }
 
-type {{ $typ }} string
+type {{ $typ }} struct {
+    bs string
+    qs string
+}
 
 // {{ $.Entity }}ColumnExpr implements {{ $columnOrderType }}.
 func (c {{ $typ }}) {{ $.Entity }}ColumnExpr() string {
-    return c.String()
+    return c.QuotedString()
 }
 
-// String gets quoted column name.
+// String gets bare column name.
 func (c {{ $typ }}) String() string {
-    return string(c)
+    return c.bs
+}
+
+// QuotedString gets quoted column name.
+func (c {{ $typ }}) QuotedString() string {
+    return c.qs
 }
 
 func (c {{ $typ }}) Eq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Eq{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Eq{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) NotEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.NotEq{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) In(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Eq{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Eq{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) NotIn(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.NotEq{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.NotEq{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) Like(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " LIKE ?", v)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.QuotedString() + " LIKE ?", v)}
 }
 
 func (c {{ $typ }}) NotLike(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " NOT LIKE ?", v)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.QuotedString() + " NOT LIKE ?", v)}
 }
 
 func (c {{ $typ }}) Lt(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Lt{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Lt{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) LtOrEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.LtOrEq{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.LtOrEq{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) Gt(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Gt{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.Gt{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) GtOrEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.GtOrEq{c.String(): v}}
+    return &{{ $sqlizerImpl}}{squirrel.GtOrEq{c.QuotedString(): v}}
 }
 
 func (c {{ $typ }}) Between(v1, v2 {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " BETWEEN ? AND ?", v1, v2)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.QuotedString() + " BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c {{ $typ }}) NotBetween(v1, v2 {{ $column.FieldType }}) {{ $sqlizerType }} {
-    return &{{ $sqlizerImpl}}{squirrel.Expr(c.String() + " NOT BETWEEN ? AND ?", v1, v2)}
+    return &{{ $sqlizerImpl}}{squirrel.Expr(c.QuotedString() + " NOT BETWEEN ? AND ?", v1, v2)}
 }
 
 func (c {{ $typ }}) Asc() {{ $orderType }} {
-    return {{ $columnOrderType }}(c.String())
+    return {{ $columnOrderType }}(c.QuotedString())
 }
 
 func (c {{ $typ }}) Desc() {{ $orderType }} {
-    return {{ $columnOrderType }}(c.String() + " DESC")
+    return {{ $columnOrderType }}(c.QuotedString() + " DESC")
 }
 
 {{ end }}
@@ -286,7 +294,7 @@ func new{{ $dbsetType }}(dbc *goen.DBContext) *{{ $dbsetType }} {
     }
     {{ range $column := $.Columns -}}
     {{ $typ := printf "_%s_%s" $.Entity $column.FieldName -}}
-    dbset.{{ $column.FieldName }} = {{ $typ }}(dbc.Dialect().Quote("{{ $column.ColumnName }}"))
+    dbset.{{ $column.FieldName }} = {{ $typ }}{"{{ $column.ColumnName }}", dbc.Dialect().Quote("{{ $column.ColumnName }}")}
     {{ end }}
     {{ range $rel := $.OneToManyRelations }}
     dbset.Include{{ $rel.FieldName }} = goen.IncludeLoaderFunc(dbset.include{{ $rel.FieldName }})
@@ -300,7 +308,13 @@ func new{{ $dbsetType }}(dbc *goen.DBContext) *{{ $dbsetType }} {
     return dbset
 }
 
+// String gets bare table name
 func (dbset *{{ $dbsetType }}) String() string {
+    return "{{ $.TableName }}"
+}
+
+// QuotedString gets quoted table name
+func (dbset *{{ $dbsetType }}) QuotedString() string {
     return dbset.dbc.Dialect().Quote("{{ $.TableName }}")
 }
 
