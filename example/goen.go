@@ -224,11 +224,11 @@ func (c _Blog_BlogID) NotEq(v github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Blog_BlogID) In(v []github_com_satori_go_uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) In(v ...github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Blog_BlogID) NotIn(v []github_com_satori_go_uuid.UUID) BlogSqlizer {
+func (c _Blog_BlogID) NotIn(v ...github_com_satori_go_uuid.UUID) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -306,11 +306,11 @@ func (c _Blog_Name) NotEq(v string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Blog_Name) In(v []string) BlogSqlizer {
+func (c _Blog_Name) In(v ...string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Blog_Name) NotIn(v []string) BlogSqlizer {
+func (c _Blog_Name) NotIn(v ...string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -388,11 +388,11 @@ func (c _Blog_Author) NotEq(v string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Blog_Author) In(v []string) BlogSqlizer {
+func (c _Blog_Author) In(v ...string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Blog_Author) NotIn(v []string) BlogSqlizer {
+func (c _Blog_Author) NotIn(v ...string) BlogSqlizer {
 	return &_BlogSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -773,11 +773,11 @@ func (c _Post_CreatedAt) NotEq(v time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_CreatedAt) In(v []time.Time) PostSqlizer {
+func (c _Post_CreatedAt) In(v ...time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_CreatedAt) NotIn(v []time.Time) PostSqlizer {
+func (c _Post_CreatedAt) NotIn(v ...time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -855,11 +855,11 @@ func (c _Post_UpdatedAt) NotEq(v time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_UpdatedAt) In(v []time.Time) PostSqlizer {
+func (c _Post_UpdatedAt) In(v ...time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_UpdatedAt) NotIn(v []time.Time) PostSqlizer {
+func (c _Post_UpdatedAt) NotIn(v ...time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -937,11 +937,11 @@ func (c _Post_DeletedAt) NotEq(v *time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_DeletedAt) In(v []*time.Time) PostSqlizer {
+func (c _Post_DeletedAt) In(v ...*time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_DeletedAt) NotIn(v []*time.Time) PostSqlizer {
+func (c _Post_DeletedAt) NotIn(v ...*time.Time) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -1019,11 +1019,11 @@ func (c _Post_BlogID) NotEq(v github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_BlogID) In(v []github_com_satori_go_uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) In(v ...github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_BlogID) NotIn(v []github_com_satori_go_uuid.UUID) PostSqlizer {
+func (c _Post_BlogID) NotIn(v ...github_com_satori_go_uuid.UUID) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -1101,11 +1101,11 @@ func (c _Post_PostID) NotEq(v int) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_PostID) In(v []int) PostSqlizer {
+func (c _Post_PostID) In(v ...int) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_PostID) NotIn(v []int) PostSqlizer {
+func (c _Post_PostID) NotIn(v ...int) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -1183,11 +1183,11 @@ func (c _Post_Title) NotEq(v string) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_Title) In(v []string) PostSqlizer {
+func (c _Post_Title) In(v ...string) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_Title) NotIn(v []string) PostSqlizer {
+func (c _Post_Title) NotIn(v ...string) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -1265,11 +1265,11 @@ func (c _Post_Content) NotEq(v string) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_Content) In(v []string) PostSqlizer {
+func (c _Post_Content) In(v ...string) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_Content) NotIn(v []string) PostSqlizer {
+func (c _Post_Content) NotIn(v ...string) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
@@ -1347,11 +1347,11 @@ func (c _Post_Order) NotEq(v int) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c _Post_Order) In(v []int) PostSqlizer {
+func (c _Post_Order) In(v ...int) PostSqlizer {
 	return &_PostSqlizer{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c _Post_Order) NotIn(v []int) PostSqlizer {
+func (c _Post_Order) NotIn(v ...int) PostSqlizer {
 	return &_PostSqlizer{squirrel.NotEq{c.QuotedString(): v}}
 }
 

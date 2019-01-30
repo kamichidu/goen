@@ -217,11 +217,11 @@ func (c {{ $typ }}) NotEq(v {{ $column.FieldType }}) {{ $sqlizerType }} {
     return &{{ $sqlizerImpl}}{squirrel.NotEq{c.QuotedString(): v}}
 }
 
-func (c {{ $typ }}) In(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
+func (c {{ $typ }}) In(v ...{{ $column.FieldType }}) {{ $sqlizerType }} {
     return &{{ $sqlizerImpl}}{squirrel.Eq{c.QuotedString(): v}}
 }
 
-func (c {{ $typ }}) NotIn(v []{{ $column.FieldType }}) {{ $sqlizerType }} {
+func (c {{ $typ }}) NotIn(v ...{{ $column.FieldType }}) {{ $sqlizerType }} {
     return &{{ $sqlizerImpl}}{squirrel.NotEq{c.QuotedString(): v}}
 }
 

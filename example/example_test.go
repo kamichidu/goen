@@ -238,13 +238,13 @@ func Example_count() {
 
 	// counting a record with conditions
 	count, err := dbc.Blog.Select().
-		Where(dbc.Blog.Name.In([]string{
+		Where(dbc.Blog.Name.In(
 			`name-3`,
 			`name-4`,
 			`name-5`,
 			`name-6`,
 			`name-7`,
-		})).
+		)).
 		Count()
 	if err != nil {
 		panic(err)
