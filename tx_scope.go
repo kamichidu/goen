@@ -15,13 +15,12 @@ func TxScope(tx *sql.Tx, err error) txScope {
 		if err != nil {
 			return err
 		}
-		perr := safeDo(func() {
-			err = fn(tx)
-		})
-		if perr != nil {
+		// panic in fn, it will be available for caller
+		defer func() {
+			// if invoke rollback twice or already commited, there's no side-effect
 			tx.Rollback()
-			return perr
-		} else if err != nil {
+		}()
+		if err := fn(tx); err != nil {
 			tx.Rollback()
 			return err
 		} else {

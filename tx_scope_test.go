@@ -9,6 +9,7 @@ import (
 	"github.com/kamichidu/goen"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleTxScope_funcCall() {
@@ -229,5 +230,15 @@ func TestTxScope(t *testing.T) {
 
 		assert.Exactly(t, err, context.Canceled)
 		assert.Equal(t, stat2.OpenConnections, stat1.OpenConnections, "use TxScpe once, it automatically commit/rollback given transaction")
+	})
+	t.Run("panic in tx func will rollback automatically", func(t *testing.T) {
+		tx, err := db.Begin()
+		require.NoError(t, err)
+		assert.PanicsWithValue(t, "suck", func() {
+			goen.TxScope(tx, nil)(func(tx *sql.Tx) error {
+				panic("suck")
+			})
+		})
+		assert.EqualError(t, tx.Commit(), sql.ErrTxDone.Error())
 	})
 }
