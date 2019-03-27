@@ -16,12 +16,9 @@ func TxScope(tx *sql.Tx, err error) txScope {
 			return err
 		}
 		// panic in fn, it will be available for caller
-		defer func() {
-			// if invoke rollback twice or already commited, there's no side-effect
-			tx.Rollback()
-		}()
+		// tx.Rollback() has no effect for already commited tx; tx.Rollback() always is okay
+		defer tx.Rollback()
 		if err := fn(tx); err != nil {
-			tx.Rollback()
 			return err
 		} else {
 			return tx.Commit()
