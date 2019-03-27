@@ -1,4 +1,4 @@
-box: golang
+box: golang:1.12-stretch
 
 services:
   - id: postgres:9.6-alpine
@@ -9,7 +9,7 @@ services:
 
 build:
   steps:
-    - setup-go-workspace
+    - wercker/setup-go-workspace
 
     - script:
         name: go get
