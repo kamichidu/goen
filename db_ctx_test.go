@@ -10,7 +10,7 @@ import (
 	"github.com/kamichidu/goen"
 	_ "github.com/kamichidu/goen/dialect/sqlite3"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,6 +48,30 @@ func TestDBContext(t *testing.T) {
 		}
 	}
 
+	// for stable testing
+	toInt64 := func(v interface{}) int64 {
+		switch val := v.(type) {
+		case int64:
+			return val
+		default:
+			panic("unhandled type from sql driver")
+		}
+	}
+	toString := func(v interface{}) string {
+		switch val := v.(type) {
+		case []byte:
+			// []byte means string
+			return string(val)
+		case string:
+			return val
+		default:
+			panic("unhandled type from sql driver")
+		}
+	}
+	toUUID := func(v interface{}) uuid.UUID {
+		return uuid.FromStringOrNil(toString(v))
+	}
+
 	t.Run("Scan", func(t *testing.T) {
 		getRows := func() *sql.Rows {
 			rows, err := db.Query("select id, name, enabled, uuid from testing order by id")
@@ -75,19 +99,13 @@ func TestDBContext(t *testing.T) {
 				record := records[i]
 				scannedRecord := scannedRecords[i]
 				// id
-				if v, ok := scannedRecord[0].(int64); ok {
-					scannedRecord[0] = v
-				}
+				scannedRecord[0] = toInt64(scannedRecord[0])
 				// name
-				if v, ok := scannedRecord[1].([]byte); ok {
-					scannedRecord[1] = string(v)
-				}
+				scannedRecord[1] = toString(scannedRecord[1])
 				// enabled
 				// sqlite driver returns a bool as a bool type
 				// uuid
-				if v, ok := scannedRecord[3].([]byte); ok {
-					scannedRecord[3] = uuid.FromStringOrNil(string(v))
-				}
+				scannedRecord[3] = toUUID(scannedRecord[3])
 
 				assert.Equal(t, record, scannedRecord)
 			}
@@ -109,12 +127,8 @@ func TestDBContext(t *testing.T) {
 				record := records[i]
 				scannedRecord := scannedRecords[i]
 
-				if v, ok := scannedRecord["name"].([]byte); ok {
-					scannedRecord["name"] = string(v)
-				}
-				if v, ok := scannedRecord["uuid"].([]byte); ok {
-					scannedRecord["uuid"] = uuid.FromStringOrNil(string(v))
-				}
+				scannedRecord["name"] = toString(scannedRecord["name"])
+				scannedRecord["uuid"] = toUUID(scannedRecord["uuid"])
 
 				assert.Equal(t, record, []interface{}{
 					scannedRecord["id"],
