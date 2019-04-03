@@ -235,7 +235,7 @@ func TestTxScope(t *testing.T) {
 		tx, err := db.Begin()
 		require.NoError(t, err)
 		assert.PanicsWithValue(t, "suck", func() {
-			goen.TxScope(tx, nil)(func(tx *sql.Tx) error {
+			goen.TxScope(tx, nil)(func(tx *sql.Tx) error { // nolint: errcheck
 				panic("suck")
 			})
 		})

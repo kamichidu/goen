@@ -9,7 +9,9 @@ import (
 
 var (
 	SrcImporter types.Importer = &cachedImporter{
-		Importer: importer.For("source", nil),
+		// importer.For is deprecated since go1.12
+		// but goen supports older go versions, ignore this line.
+		Importer: importer.For("source", nil), // nolint: staticcheck
 		cache:    map[string]*types.Package{},
 	}
 )

@@ -1,8 +1,9 @@
 package example
 
 import (
-	"github.com/satori/go.uuid"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 //go:generate goen -o goen.go

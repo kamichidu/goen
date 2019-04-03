@@ -8,7 +8,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kamichidu/goen"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 func unifyQuery(s string) string {

@@ -104,13 +104,13 @@ func run(stdin io.Reader, stdout io.Writer, stderr io.Writer, args []string) int
 	flg.BoolVar(&noGoImports, "no-goimports", false, "generating go codes without goimports")
 	if err := flg.Parse(args[1:]); err != nil {
 		log.Print(err)
-		flg.Parse([]string{"-h"})
+		flg.Usage()
 		return 128
 	} else if showVersion {
 		fmt.Fprintf(stdout, "%s - %s", filepath.Base(args[0]), version)
 		return 0
 	} else if flg.NArg() > 1 {
-		flg.Parse([]string{"-h"})
+		flg.Usage()
 		return 128
 	}
 	srcDir := flg.Arg(0)
@@ -140,7 +140,7 @@ func run(stdin io.Reader, stdout io.Writer, stderr io.Writer, args []string) int
 			return 1
 		}
 
-		if _, err := wc.Seek(0, os.SEEK_SET); err != nil {
+		if _, err := wc.Seek(0, io.SeekStart); err != nil {
 			log.Printf("failed to rewind: %s", err)
 			return 1
 		}

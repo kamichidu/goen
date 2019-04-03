@@ -125,7 +125,9 @@ func AssumeImport(dir string) (pkgName string, pkgPath string) {
 	// XXX: when no go file error, modify filepath to assume pkgName and pkgPath
 	pkgName = filepath.Base(dir)
 	for _, goDir := range build.Default.SrcDirs() {
-		if !filepath.HasPrefix(absdir, goDir) {
+		// filepath.HasPrefix is now deprecated, but ignore linter for this line.
+		// in the future, should implements correct function.
+		if !filepath.HasPrefix(absdir, goDir) { // nolint: staticcheck
 			continue
 		}
 

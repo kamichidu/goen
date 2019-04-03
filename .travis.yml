@@ -34,5 +34,5 @@ before_script:
   - psql -c 'create database testing;' -U postgres
 
 script:
-  # - golangci-lint run
+  - golangci-lint run
   - go test ${TAGS} -v ./...

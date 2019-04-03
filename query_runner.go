@@ -3,8 +3,9 @@ package goen
 import (
 	"context"
 	"database/sql"
-	sqr "github.com/Masterminds/squirrel"
 	"sync"
+
+	sqr "github.com/Masterminds/squirrel"
 )
 
 // QueryRunner ...

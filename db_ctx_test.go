@@ -238,7 +238,7 @@ func TestDBContext(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		defer tx.Rollback()
+		defer tx.Rollback() // nolint: errcheck
 
 		t.Run("", func(t *testing.T) {
 			dbc := goen.NewDBContext("sqlite3", db)

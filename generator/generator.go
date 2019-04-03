@@ -255,7 +255,7 @@ func (g *Generator) safePkgImport(typ internal.Type) (pkgName string, pkgPath st
 		return "", ""
 	}
 	var safe []rune
-	for _, c := range []rune(pkgPath) {
+	for _, c := range pkgPath {
 		switch {
 		case c >= 'a' && c <= 'z':
 			safe = append(safe, c)
