@@ -1,0 +1,38 @@
+---
+language: go
+
+go:
+  - 1.12.x
+  - 1.11.x
+  - 1.10.x
+  - 1.9.x
+
+env:
+  # for sqlite3
+  - TAGS= GOEN_TEST_CONNSTR=
+  # for postgres
+  - TAGS="-tags postgres" GOEN_TEST_CONNSTR="dbname=testing user=postgres sslmode=disable"
+
+services:
+  - postgresql
+
+addons:
+  postgresql: '9.6'
+
+before_install:
+  - go get -v ./...
+
+before_script:
+  # install for lint
+  - wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.15.0
+  # install for test
+  - go get -v github.com/davecgh/go-spew/spew
+  - go get -v github.com/mattn/go-sqlite3
+  - go get -v github.com/lib/pq
+  - go get -v github.com/stretchr/testify/...
+  # create database
+  - psql -c 'create database testing;' -U postgres
+
+script:
+  # - golangci-lint run
+  - go test ${TAGS} -v ./...

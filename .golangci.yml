@@ -1,0 +1,14 @@
+---
+linters:
+  disable-all: true
+  enable:
+    - govet
+    - gofmt
+    - goimports
+    - errcheck
+    - staticcheck
+linters-settings:
+  errcheck:
+    check-blank: true
+  gofmt:
+    simplify: false

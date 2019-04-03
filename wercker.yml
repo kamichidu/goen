@@ -17,6 +17,16 @@ build:
           go get -v ./...
 
     - script:
+        name: install golangci-lint
+        code: |
+          wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.15.0
+
+    - script:
+        name: golangci-lint
+        code: |
+          golangci-lint run
+
+    - script:
         name: go build
         code: |
           go build ./...
