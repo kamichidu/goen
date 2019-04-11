@@ -300,9 +300,7 @@ func (dbc *DBContext) scanRowAsStruct(rows sqr.RowScanner, cols []*sql.ColumnTyp
 }
 
 func (dbc *DBContext) debugPrint(v ...interface{}) {
-	if l, ok := dbc.Logger.(leveledLogger); ok {
-		l.Debug(v...)
-	} else if dbc.Logger != nil {
+	if dbc.Logger != nil {
 		dbc.Logger.Print(v...)
 	} else {
 		log.Print(v...)
@@ -310,9 +308,7 @@ func (dbc *DBContext) debugPrint(v ...interface{}) {
 }
 
 func (dbc *DBContext) debugPrintf(format string, args ...interface{}) {
-	if l, ok := dbc.Logger.(leveledLogger); ok {
-		l.Debugf(format, args...)
-	} else if dbc.Logger != nil {
+	if dbc.Logger != nil {
 		dbc.Logger.Printf(format, args...)
 	} else {
 		log.Printf(format, args...)
