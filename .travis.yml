@@ -1,6 +1,10 @@
 ---
 language: go
 
+# avoiding link error
+# https://github.com/travis-ci/gimme/issues/174
+dist: xenial
+
 go:
   - 1.12.x
   - 1.11.x
