@@ -10,7 +10,7 @@ import (
 var (
 	DefaultCompiler PatchCompiler = &defaultCompiler{}
 
-	BulkCompiler PatchCompiler = &bulkCompiler{}
+	BulkCompiler PatchCompiler = &BulkCompilerWithOption{MaxPatches: 1000}
 )
 
 type CompilerHook interface {
@@ -140,9 +140,13 @@ func (*defaultCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList
 	return sqlizers
 }
 
-type bulkCompiler struct{}
+type BulkCompilerWithOption struct {
+	// MaxPatches limits values per bulk operations.
+	// MaxPatches<=0 means unlimited.
+	MaxPatches int
+}
 
-func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList) {
+func (c *BulkCompilerWithOption) Compile(options *CompilerOptions) (sqlizers *SqlizerList) {
 	opts := (*compilerOptionsUtils)(options)
 	stmtBuilder := opts.StatementBuilder()
 	sqlizers = NewSqlizerList()
@@ -155,9 +159,11 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 		switch patch.Kind {
 		case PatchInsert:
 			stmt := stmtBuilder.Insert(opts.Quote(patch.TableName)).Columns(opts.Quotes(patch.Columns)...).Values(patch.Values...)
-			for curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
+			chunks := 1
+			for c.canTakeMoreChunks(chunks) && curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
 				stmt = stmt.Values(curr.GetValue().Values...)
+				chunks++
 			}
 			sqlizers.PushBack(opts.PostInsertBuilder(stmt))
 		case PatchDelete:
@@ -166,10 +172,12 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 			if patch.RowKey != nil {
 				cond = append(cond, opts.RowKeyToSqlizer(patch.RowKey))
 			}
-			for curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
+			chunks := 1
+			for c.canTakeMoreChunks(chunks) && curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
 				if np := curr.GetValue(); np.RowKey != nil {
 					cond = append(cond, opts.RowKeyToSqlizer(np.RowKey))
+					chunks++
 				}
 			}
 			stmt = stmt.Where(cond)
@@ -183,10 +191,12 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 			if patch.RowKey != nil {
 				cond = append(cond, opts.RowKeyToSqlizer(patch.RowKey))
 			}
-			for curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
+			chunks := 1
+			for c.canTakeMoreChunks(chunks) && curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
 				if np := curr.GetValue(); np.RowKey != nil {
 					cond = append(cond, opts.RowKeyToSqlizer(np.RowKey))
+					chunks++
 				}
 			}
 			stmt = stmt.Where(cond)
@@ -205,7 +215,7 @@ func (c *bulkCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList)
 	return sqlizers
 }
 
-func (c *bulkCompiler) isCompat(p1, p2 *Patch) bool {
+func (c *BulkCompilerWithOption) isCompat(p1, p2 *Patch) bool {
 	if p1.Kind != p2.Kind {
 		return false
 	}
@@ -231,4 +241,11 @@ func (c *bulkCompiler) isCompat(p1, p2 *Patch) bool {
 		}
 	}
 	return true
+}
+
+func (c *BulkCompilerWithOption) canTakeMoreChunks(chunks int) bool {
+	if c.MaxPatches <= 0 {
+		return true
+	}
+	return chunks < c.MaxPatches
 }
