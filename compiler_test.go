@@ -579,7 +579,7 @@ func TestBulkCompiler(t *testing.T) {
 			for _, patch := range c.Patches {
 				patches.PushBack(patch)
 			}
-			sqlizers := (&BulkCompilerWithOption{
+			sqlizers := (&BulkCompilerOptions{
 				MaxPatches: 2,
 			}).Compile(&CompilerOptions{
 				Dialect: &testingDialect{},

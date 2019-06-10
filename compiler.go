@@ -10,7 +10,7 @@ import (
 var (
 	DefaultCompiler PatchCompiler = &defaultCompiler{}
 
-	BulkCompiler PatchCompiler = &BulkCompilerWithOption{MaxPatches: 1000}
+	BulkCompiler PatchCompiler = &BulkCompilerOptions{MaxPatches: 1000}
 )
 
 type CompilerHook interface {
@@ -140,13 +140,13 @@ func (*defaultCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList
 	return sqlizers
 }
 
-type BulkCompilerWithOption struct {
+type BulkCompilerOptions struct {
 	// MaxPatches limits values per bulk operations.
 	// MaxPatches<=0 means unlimited.
 	MaxPatches int
 }
 
-func (c *BulkCompilerWithOption) Compile(options *CompilerOptions) (sqlizers *SqlizerList) {
+func (c *BulkCompilerOptions) Compile(options *CompilerOptions) (sqlizers *SqlizerList) {
 	opts := (*compilerOptionsUtils)(options)
 	stmtBuilder := opts.StatementBuilder()
 	sqlizers = NewSqlizerList()
@@ -215,7 +215,7 @@ func (c *BulkCompilerWithOption) Compile(options *CompilerOptions) (sqlizers *Sq
 	return sqlizers
 }
 
-func (c *BulkCompilerWithOption) isCompat(p1, p2 *Patch) bool {
+func (c *BulkCompilerOptions) isCompat(p1, p2 *Patch) bool {
 	if p1.Kind != p2.Kind {
 		return false
 	}
@@ -243,7 +243,7 @@ func (c *BulkCompilerWithOption) isCompat(p1, p2 *Patch) bool {
 	return true
 }
 
-func (c *BulkCompilerWithOption) canTakeMoreChunks(chunks int) bool {
+func (c *BulkCompilerOptions) canTakeMoreChunks(chunks int) bool {
 	if c.MaxPatches <= 0 {
 		return true
 	}
