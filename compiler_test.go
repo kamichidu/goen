@@ -478,10 +478,21 @@ func TestBulkCompiler(t *testing.T) {
 						[]string{"id", "name"},
 						[]interface{}{3, "c"},
 					),
+					InsertPatch(
+						"testing",
+						[]string{"id", "name"},
+						[]interface{}{4, "d"},
+					),
+					InsertPatch(
+						"testing",
+						[]string{"id", "name"},
+						[]interface{}{5, "e"},
+					),
 				},
 				[]sqr.Sqlizer{
 					sqr.Expr(`INSERT INTO "testing" ("id","name") VALUES (?,?),(?,?)`, 1, "a", 2, "b"),
-					sqr.Expr(`INSERT INTO "testing" ("id","name") VALUES (?,?)`, 3, "c"),
+					sqr.Expr(`INSERT INTO "testing" ("id","name") VALUES (?,?),(?,?)`, 3, "c", 4, "d"),
+					sqr.Expr(`INSERT INTO "testing" ("id","name") VALUES (?,?)`, 5, "e"),
 				},
 			},
 			{
@@ -502,12 +513,25 @@ func TestBulkCompiler(t *testing.T) {
 						Table: "testing",
 						Key: map[string]interface{}{
 							"id": 3,
+						},
+					}),
+					UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+						Table: "testing",
+						Key: map[string]interface{}{
+							"id": 4,
+						},
+					}),
+					UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+						Table: "testing",
+						Key: map[string]interface{}{
+							"id": 5,
 						},
 					}),
 				},
 				[]sqr.Sqlizer{
 					sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE ("id" = ? OR "id" = ?)`, "a", 1, 2),
-					sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE ("id" = ?)`, "a", 3),
+					sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE ("id" = ? OR "id" = ?)`, "a", 3, 4),
+					sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE ("id" = ?)`, "a", 5),
 				},
 			},
 			{
@@ -530,10 +554,23 @@ func TestBulkCompiler(t *testing.T) {
 							"id": 3,
 						},
 					}),
+					DeletePatch("testing", &MapRowKey{
+						Table: "testing",
+						Key: map[string]interface{}{
+							"id": 4,
+						},
+					}),
+					DeletePatch("testing", &MapRowKey{
+						Table: "testing",
+						Key: map[string]interface{}{
+							"id": 5,
+						},
+					}),
 				},
 				[]sqr.Sqlizer{
 					sqr.Expr(`DELETE FROM "testing" WHERE ("id" = ? OR "id" = ?)`, 1, 2),
-					sqr.Expr(`DELETE FROM "testing" WHERE ("id" = ?)`, 3),
+					sqr.Expr(`DELETE FROM "testing" WHERE ("id" = ? OR "id" = ?)`, 3, 4),
+					sqr.Expr(`DELETE FROM "testing" WHERE ("id" = ?)`, 5),
 				},
 			},
 		}
