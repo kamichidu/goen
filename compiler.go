@@ -10,7 +10,7 @@ import (
 var (
 	DefaultCompiler PatchCompiler = &defaultCompiler{}
 
-	BulkCompiler PatchCompiler = &BulkCompilerOptions{MaxPatches: 1000}
+	BulkCompiler PatchCompiler = &BulkCompilerOptions{}
 )
 
 type CompilerHook interface {
