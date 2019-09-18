@@ -28,9 +28,11 @@ create table posts (
 	"order" integer,
 	created_at timestamp with time zone not null,
 	updated_at timestamp with time zone not null,
-	deleted_at timestamp with time zone,
-	foreign key (blog_id) references blogs(blog_id)
+	deleted_at timestamp with time zone
 );
+
+alter table posts
+	add constraint posts_blogs_fk foreign key (blog_id) references blogs(blog_id);
 `
 
 const dialectName = "postgres"
@@ -48,4 +50,11 @@ func prepareDB() (string, *sql.DB) {
 		panic(err)
 	}
 	return dialectName, db
+}
+
+func dropForeignKeys(db *sql.DB) {
+	_, err := db.Exec(`alter table posts drop constraint posts_blogs_fk`)
+	if err != nil {
+		panic(err)
+	}
 }

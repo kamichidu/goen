@@ -28,8 +28,31 @@ create table posts (
 	created_at datetime not null,
 	updated_at datetime not null,
 	deleted_at datetime,
-	-- primary key(blog_id, post_id),
 	foreign key (blog_id) references blogs(blog_id)
+);
+`
+
+// sqlite3 does not support "drop constraint"
+// so re-create tables without foreign keys
+const ddlNoForeignKeys = `
+drop table if exists posts;
+drop table if exists blogs;
+
+create table blogs (
+	blog_id blob primary key,
+	name varchar,
+	author varchar(32)
+);
+
+create table posts (
+	blog_id blob not null,
+	post_id integer not null primary key,
+	title varchar not null,
+	content varchar not null,
+	"order" integer,
+	created_at datetime not null,
+	updated_at datetime not null,
+	deleted_at datetime
 );
 `
 
@@ -44,4 +67,11 @@ func prepareDB() (string, *sql.DB) {
 		panic(err)
 	}
 	return dialectName, db
+}
+
+func dropForeignKeys(db *sql.DB) {
+	_, err := db.Exec(ddlNoForeignKeys)
+	if err != nil {
+		panic(err)
+	}
 }

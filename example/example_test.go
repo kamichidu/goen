@@ -435,3 +435,54 @@ func Example_queryBuilderAsSqlizer() {
 	// "SELECT `blog_id` FROM `blogs` WHERE `author` = ?"
 	// ["kamichidu"]
 }
+
+func Example_brokenManyToOneRelationWithNonForeignKey() {
+	dbc := NewDBContext(prepareDB())
+	dropForeignKeys(dbc.DB)
+
+	validBlogID := uuid.Must(uuid.FromString("d03bc237-eef4-4b6f-afe1-ea901357d828"))
+	invalidBlogID := uuid.Must(uuid.FromString("0c816298-1d35-4948-870a-6f7b5bba14d3"))
+	dbc.Blog.Insert(&Blog{
+		BlogID: validBlogID,
+		Name:   "the blog",
+	})
+	dbc.Post.Insert(&Post{
+		BlogID: validBlogID,
+		Title:  "0 the valid post",
+		Timestamp: Timestamp{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	})
+	dbc.Post.Insert(&Post{
+		BlogID: invalidBlogID,
+		Title:  "1 the invalid post",
+		Timestamp: Timestamp{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	})
+	if err := dbc.SaveChanges(); err != nil {
+		panic(err)
+	}
+
+	posts, err := dbc.Post.Select().
+		Include(dbc.Post.IncludeBlog).
+		OrderBy(dbc.Post.Title.Asc()).
+		Query()
+	if err != nil {
+		panic(err)
+	}
+	for _, post := range posts {
+		var blogName string
+		if post.Blog != nil {
+			blogName = post.Blog.Name
+		} else {
+			blogName = "<nil>"
+		}
+		fmt.Printf("%q with related blog %q\n", post.Title, blogName)
+	}
+	// Output:
+	// "0 the valid post" with related blog "the blog"
+	// "1 the invalid post" with related blog "<nil>"
+}

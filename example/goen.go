@@ -1517,7 +1517,9 @@ func (dbset *PostDBSet) includeBlog(ctx context.Context, later *goen.IncludeBuff
 	for _, entity := range entities {
 		childRowKey := childRowKeyOf(entity)
 		raw := sc.GetObject(childRowKey)
-		entity.Blog = raw.(*Blog)
+		if castover, ok := raw.(*Blog); ok {
+			entity.Blog = castover
+		}
 	}
 
 	return nil

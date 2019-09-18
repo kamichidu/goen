@@ -493,7 +493,9 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
     for _, entity := range entities {
         childRowKey := childRowKeyOf(entity)
         raw := sc.GetObject(childRowKey)
-        entity.{{ $rel.FieldName }} = raw.(*{{ $rel.FieldType }})
+        if castover, ok := raw.(*{{ $rel.FieldType }}); ok {
+            entity.{{ $rel.FieldName }} = castover
+        }
     }
 
     return nil

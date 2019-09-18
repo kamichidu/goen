@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -100,7 +102,24 @@ func (f *_escFile) Close() error {
 }
 
 func (f *_escFile) Readdir(count int) ([]os.FileInfo, error) {
-	return nil, nil
+	if !f.isDir {
+		return nil, fmt.Errorf(" escFile.Readdir: '%s' is not directory", f.name)
+	}
+
+	fis, ok := _escDirs[f.local]
+	if !ok {
+		return nil, fmt.Errorf(" escFile.Readdir: '%s' is directory, but we have no info about content of this dir, local=%s", f.name, f.local)
+	}
+	limit := count
+	if count <= 0 || limit > len(fis) {
+		limit = len(fis)
+	}
+
+	if len(fis) == 0 && count > 0 {
+		return nil, io.EOF
+	}
+
+	return fis[0:limit], nil
 }
 
 func (f *_escFile) Stat() (os.FileInfo, error) {
@@ -191,9 +210,10 @@ func _escFSMustString(useLocal bool, name string) string {
 var _escData = map[string]*_escFile{
 
 	"/templates/context.tgo": {
+		name:    "context.tgo",
 		local:   "templates/context.tgo",
 		size:    856,
-		modtime: 1532581055,
+		modtime: 1568783834,
 		compressed: `
 H4sIAAAAAAAC/8ySQW6zMBSE95xiFOX/BSjlAEjZULrNpvQA2H5BSNSk+KEQIe5e2QRIUBupXZUVfp43
 mvlkvpwIafJca6aOYbhpJaP3ACAsatLRfOm5Yd+jyXVB2HIuKkK8xzbK7K/BMEySrRKGOLPm8R6nptR8
@@ -204,9 +224,10 @@ QRXgzVDW+dyNILPuC5CyqrXLrYRcHk40bf6En7P6owRdtscMPwMAAP//m3s0c1gDAAA=
 	},
 
 	"/templates/root.tgo": {
+		name:    "root.tgo",
 		local:   "templates/root.tgo",
 		size:    510,
-		modtime: 1548144244,
+		modtime: 1568783834,
 		compressed: `
 H4sIAAAAAAAC/4SPzY6bMBSF936KI5TFzKL2fqpZNamK1PxIoQ9gzA22AjayL2kjxLtXhqQ/q9ldzv24
 57NS+BIaQkueomZqUN9hmYf0plTr2I61NKFXV907Y10zqjaQ/4ztEYdjhd22rFB9K8/4Wn7fSaEUfiRC
@@ -218,9 +239,10 @@ M/3iFZd5/zsAAP//K5RKj/4BAAA=
 	},
 
 	"/templates/table.tgo": {
+		name:    "table.tgo",
 		local:   "templates/table.tgo",
-		size:    15643,
-		modtime: 1548826987,
+		size:    15699,
+		modtime: 1568788701,
 		compressed: `
 H4sIAAAAAAAC/+xaW2/bxvJ/96eYGm5A+s9Q6R8H58GFTxFfkhPEtVrbB30wjIAiRzKPqV1puZKiCvzu
 B3shuUsudXOd5sEvvpA7M7+d287OcLWCo3yapX8iu1tOEE5OYcJSwodw+GN+q14cwlF4SXjKl1AUBwbF
@@ -266,17 +288,23 @@ mybkZ3/R2D7MO79r7JoFO74vPHBHuChBqviug68d3xuKDFKWF8HBFnFZfey4lmcrp/m++VmcNdVeN202
 awDeTF6GqvR3IAQX2RLkN6hl3g6AUxigyOkZJjBY2h85Vxxk7SCE3agz3mspyjwktk/DRv7dnI5ZJD8w
 y+PwI3K9a4PCcipxJNaFSbQQRYlZyPwMViVifXegjuHyq4NhS+1V7bMMO65jOtmtWaTkhJ7TXX3bn4rm
 gSH2Fy3cXrkeWEd8rKSG3FgKdyFg1G5WN29NFSxWyBpYLRJvxSpKcOtS2X2Dfy2VX0vl11L5tVR+LZVf
-S+XXUvm1VH4tlbculdeXi2vKwq1rQXeZ16gFdcG4SynonJd0FKIdsv8XAAD//7oI8hMbPQAA
+S+XXUvm1VH4tlXcpleMo53QuahujWnbXgo6qeX29WfLeo4Z0l4eNGlIXmruUkM45S0cB2yH7fwEAAP//
+EHWW31M9AAA=
 `,
 	},
 
-	"/": {
-		isDir: true,
-		local: "",
-	},
-
 	"/templates": {
+		name:  "templates",
+		local: `templates/`,
 		isDir: true,
-		local: "templates",
+	},
+}
+
+var _escDirs = map[string][]os.FileInfo{
+
+	"templates/": {
+		_escData["/templates/context.tgo"],
+		_escData["/templates/root.tgo"],
+		_escData["/templates/table.tgo"],
 	},
 }
