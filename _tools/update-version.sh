@@ -16,6 +16,15 @@ fi
 
 version="$1"
 
+case "${version}" in
+    v*.*.*)
+        # ok
+        ;;
+    *)
+        usage_exit 128
+        ;;
+esac
+
 basedir="$(dirname "$(dirname "$0")")"
 verfile="$basedir/cmd/goen/version.go"
 
