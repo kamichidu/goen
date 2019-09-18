@@ -143,6 +143,44 @@ func TestDefaultCompiler(t *testing.T) {
 				sqr.Expr(`DELETE FROM "testing" WHERE "id" = ?`, 1),
 			},
 		},
+		{
+			[]*Patch{
+				UpdatePatch(
+					"testing",
+					[]string{"name"},
+					[]interface{}{"c"},
+					// no RowKey: update all in the table
+					nil,
+				),
+				UpdatePatch(
+					"testing",
+					[]string{"name"},
+					[]interface{}{"c"},
+					// empty RowKey.Key: delete all in the table
+					&MapRowKey{
+						Table: "testing",
+					},
+				),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE (1=1)`, "c"),
+				sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE (1=1)`, "c"),
+			},
+		},
+		{
+			[]*Patch{
+				// no RowKey: delete all in the table
+				DeletePatch("testing", nil),
+				// empty RowKey.Key: delete all in the table
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`DELETE FROM "testing" WHERE (1=1)`),
+				sqr.Expr(`DELETE FROM "testing" WHERE (1=1)`),
+			},
+		},
 	}
 	for _, c := range cases {
 		patches := NewPatchList()
@@ -298,6 +336,37 @@ func TestBulkCompiler(t *testing.T) {
 		},
 		{
 			[]*Patch{
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				// no RowKey: update all in the table
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, nil),
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+				// empty RowKey.Key: update all in the table
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+				}),
+				UpdatePatch("testing", []string{"name"}, []interface{}{"a"}, &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 3,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`UPDATE "testing" SET "name" = ? WHERE ("id" = ? OR (1=1) OR "id" = ? OR (1=1) OR "id" = ?)`, "a", 1, 2, 3),
+			},
+		},
+		{
+			[]*Patch{
 				DeletePatch("testing", &MapRowKey{
 					Table: "testing",
 					Key: map[string]interface{}{
@@ -346,6 +415,37 @@ func TestBulkCompiler(t *testing.T) {
 				sqr.Expr(`DELETE FROM "testing1" WHERE ("id" = ?)`, 1),
 				sqr.Expr(`DELETE FROM "testing2" WHERE ("id" = ?)`, 2),
 				sqr.Expr(`DELETE FROM "testing1" WHERE ("id" = ?)`, 3),
+			},
+		},
+		{
+			[]*Patch{
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 1,
+					},
+				}),
+				// no RowKey: delete all in the table
+				DeletePatch("testing", nil),
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 2,
+					},
+				}),
+				// empty RowKey.Key: delete all in the table
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+				}),
+				DeletePatch("testing", &MapRowKey{
+					Table: "testing",
+					Key: map[string]interface{}{
+						"id": 3,
+					},
+				}),
+			},
+			[]sqr.Sqlizer{
+				sqr.Expr(`DELETE FROM "testing" WHERE ("id" = ? OR (1=1) OR "id" = ? OR (1=1) OR "id" = ?)`, 1, 2, 3),
 			},
 		},
 		{

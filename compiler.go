@@ -70,6 +70,10 @@ func (opts *compilerOptionsUtils) Quotes(l []string) []string {
 }
 
 func (opts *compilerOptionsUtils) RowKeyToSqlizer(rowKey RowKey) sqr.Sqlizer {
+	if rowKey == nil {
+		// always true
+		return sqr.Eq{}
+	}
 	if opts.Dialect != nil {
 		return rowKey.ToSqlizerWithDialect(opts.Dialect)
 	} else {
@@ -123,15 +127,11 @@ func (*defaultCompiler) Compile(options *CompilerOptions) (sqlizers *SqlizerList
 			for i := range patch.Columns {
 				stmt = stmt.Set(opts.Quote(patch.Columns[i]), patch.Values[i])
 			}
-			if patch.RowKey != nil {
-				stmt = stmt.Where(opts.RowKeyToSqlizer(patch.RowKey))
-			}
+			stmt = stmt.Where(opts.RowKeyToSqlizer(patch.RowKey))
 			sqlizers.PushBack(opts.PostUpdateBuilder(stmt))
 		case PatchDelete:
 			stmt := stmtBuilder.Delete(opts.Quote(patch.TableName))
-			if patch.RowKey != nil {
-				stmt = stmt.Where(opts.RowKeyToSqlizer(patch.RowKey))
-			}
+			stmt = stmt.Where(opts.RowKeyToSqlizer(patch.RowKey))
 			sqlizers.PushBack(opts.PostDeleteBuilder(stmt))
 		default:
 			panic("goen: unable to make sql statement for unknown kind (" + string(patch.Kind) + ")")
@@ -169,16 +169,12 @@ func (c *BulkCompilerOptions) Compile(options *CompilerOptions) (sqlizers *Sqliz
 		case PatchDelete:
 			stmt := stmtBuilder.Delete(opts.Quote(patch.TableName))
 			cond := sqr.Or{}
-			if patch.RowKey != nil {
-				cond = append(cond, opts.RowKeyToSqlizer(patch.RowKey))
-			}
+			cond = append(cond, opts.RowKeyToSqlizer(patch.RowKey))
 			chunks := 1
 			for c.canTakeMoreChunks(chunks) && curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
-				if np := curr.GetValue(); np.RowKey != nil {
-					cond = append(cond, opts.RowKeyToSqlizer(np.RowKey))
-					chunks++
-				}
+				cond = append(cond, opts.RowKeyToSqlizer(curr.GetValue().RowKey))
+				chunks++
 			}
 			stmt = stmt.Where(cond)
 			sqlizers.PushBack(opts.PostDeleteBuilder(stmt))
@@ -188,16 +184,12 @@ func (c *BulkCompilerOptions) Compile(options *CompilerOptions) (sqlizers *Sqliz
 				stmt = stmt.Set(opts.Quote(patch.Columns[i]), patch.Values[i])
 			}
 			cond := sqr.Or{}
-			if patch.RowKey != nil {
-				cond = append(cond, opts.RowKeyToSqlizer(patch.RowKey))
-			}
+			cond = append(cond, opts.RowKeyToSqlizer(patch.RowKey))
 			chunks := 1
 			for c.canTakeMoreChunks(chunks) && curr.Next() != nil && c.isCompat(patch, curr.Next().GetValue()) {
 				curr = curr.Next()
-				if np := curr.GetValue(); np.RowKey != nil {
-					cond = append(cond, opts.RowKeyToSqlizer(np.RowKey))
-					chunks++
-				}
+				cond = append(cond, opts.RowKeyToSqlizer(curr.GetValue().RowKey))
+				chunks++
 			}
 			stmt = stmt.Where(cond)
 			sqlizers.PushBack(opts.PostUpdateBuilder(stmt))
