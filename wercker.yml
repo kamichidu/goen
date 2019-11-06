@@ -9,32 +9,19 @@ services:
 
 build:
   steps:
-    - wercker/setup-go-workspace
+    - script:
+        name: make lint
+        code: |
+          make lint
 
     - script:
-        name: go get
+        name: go install
         code: |
-          go get -v ./...
-
-    - script:
-        name: install golangci-lint
-        code: |
-          wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.15.0
-
-    - script:
-        name: golangci-lint
-        code: |
-          golangci-lint run
-
-    - script:
-        name: go build
-        code: |
-          go build ./...
+          go install ./...
 
     - script:
         name: go get for go generate
         code: |
-          go get -v github.com/satori/go.uuid
           go get -v github.com/mjibson/esc
 
     - script:
@@ -45,20 +32,16 @@ build:
     - script:
         name: go get for go test
         code: |
-          go get -v github.com/davecgh/go-spew/spew
-          go get -v github.com/mattn/go-sqlite3
-          go get -v github.com/lib/pq
-          go get -v github.com/stretchr/testify/...
           # for coverage
           go get -v github.com/mattn/goveralls
 
     - script:
-        name: go test for sqlite3
+        name: go test with sqlite3
         code: |
           go test -v ./...
 
     - script:
-        name: go test for postgres
+        name: go test with postgres
         code: |
           GOEN_TEST_CONNSTR="dbname=testing user=testing password=testing host=${POSTGRES_PORT_5432_TCP_ADDR} port=${POSTGRES_PORT_5432_TCP_PORT} sslmode=disable" \
             go test -tags postgres -v ./...

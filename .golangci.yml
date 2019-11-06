@@ -1,4 +1,9 @@
 ---
+run:
+  timeout: 5m
+  build-tags:
+    - '' # sqlite3
+    - postgres # postgresql
 linters:
   disable-all: true
   enable:

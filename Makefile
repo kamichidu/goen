@@ -25,6 +25,6 @@ build:
 generate:
 	go generate ./...
 
-.PHONY: deps
-deps:
-	go get -v github.com/mjibson/esc
+.PHONY: lint
+lint:
+	./_tools/golangci-lint-run.sh
