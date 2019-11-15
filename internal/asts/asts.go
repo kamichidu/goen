@@ -5,8 +5,11 @@ import (
 	"go/ast"
 	"go/build"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+var rNonWord = regexp.MustCompile(`\W`)
 
 type VisitorFunc func(ast.Node) ast.Visitor
 
@@ -102,11 +105,8 @@ func FindPkgPath(file *ast.File, pkgName string) string {
 }
 
 func AssumePkgName(pkgPath string) string {
-	pkg, err := SrcImporter.Import(pkgPath)
-	if err != nil {
-		panic(fmt.Sprintf("goen: unable to assume package name %q: %s", pkgPath, err))
-	}
-	return pkg.Name()
+	n := rNonWord.Split(pkgPath, -1)
+	return n[len(n)-1]
 }
 
 func AssumeImport(dir string) (pkgName string, pkgPath string) {
