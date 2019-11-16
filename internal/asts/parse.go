@@ -3,14 +3,13 @@ package asts
 import (
 	"fmt"
 	"go/ast"
-	"go/build"
 	"go/parser"
 	"go/token"
 )
 
 func ParsePkgPath(pkgPath string) (*ast.Package, error) {
 	// resolve directory of pkg path
-	bpkg, err := bImport(pkgPath, ".", build.FindOnly)
+	bpkg, err := bImport(pkgPath, ".", 0)
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +19,7 @@ func ParsePkgPath(pkgPath string) (*ast.Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	apkg, ok := apkgs[AssumePkgName(pkgPath)]
+	apkg, ok := apkgs[bpkg.Name]
 	if !ok {
 		return nil, fmt.Errorf("goen: package directory %q is not found", pkgPath)
 	}
