@@ -104,7 +104,7 @@ func FindPkgPath(file *ast.File, pkgName string) string {
 func AssumePkgName(pkgPath string) string {
 	bpkg, err := bImport(pkgPath, ".", 0)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("goen: unable to assume package name %q: %s", pkgPath, err))
 	}
 	return bpkg.Name
 }
