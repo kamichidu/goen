@@ -28,3 +28,9 @@ generate:
 .PHONY: lint
 lint:
 	./_tools/golangci-lint-run.sh
+
+.PHONY: deps
+deps:
+	cp go.mod go.mod.deps; cp go.sum go.sum.deps
+	go get -v github.com/mjibson/esc
+	mv go.mod.deps go.mod; mv go.sum.deps go.sum
