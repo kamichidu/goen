@@ -4,9 +4,10 @@ package multiref_test
 
 import (
 	"database/sql"
+	"os"
+
 	_ "github.com/kamichidu/goen/dialect/postgres"
 	_ "github.com/lib/pq"
-	"os"
 )
 
 const ddl = `
