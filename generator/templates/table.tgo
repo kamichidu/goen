@@ -366,7 +366,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
     noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
     for _, entity := range entities {
         key := childRowKeyOf(entity)
-        if sc.HasObject(key) {
+        if sc.HasObject(goen.CardinalityOneToMany, key) {
             cachedChildRowKeys = append(cachedChildRowKeys, key)
         } else {
             noCachedChildRowKeys = append(noCachedChildRowKeys, key)
@@ -408,13 +408,11 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
 
     for _, entity := range entities {
         childRowKey := childRowKeyOf(entity)
-        raw := sc.GetObject(childRowKey)
+        raw := sc.GetObject(goen.CardinalityOneToMany, childRowKey)
         if refes, ok := raw.([]interface{}); ok {
             for _, refe := range refes {
                 entity.{{ $rel.FieldName }} = append(entity.{{ $rel.FieldName }}, refe.(*{{ $rel.FieldType }}))
             }
-        } else if raw != nil {
-            entity.{{ $rel.FieldName }} = []*{{ $rel.FieldType }}{raw.(*{{ $rel.FieldType }})}
         }
     }
 
@@ -433,7 +431,7 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
         return nil
     }
 
-    childRowKeyOf := func(v *{{ $.Entity }}) goen.RowKey {
+    parentRowKeyOf := func(v *{{ $.Entity }}) goen.RowKey {
         return &goen.MapRowKey{
             Table: "{{ $rel.TableName }}",
             Key: map[string]interface{}{
@@ -449,8 +447,8 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
     cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
     noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
     for _, entity := range entities {
-        key := childRowKeyOf(entity)
-        if sc.HasObject(key) {
+        key := parentRowKeyOf(entity)
+        if sc.HasObject(goen.CardinalityManyToOne, key) {
             cachedChildRowKeys = append(cachedChildRowKeys, key)
         } else {
             noCachedChildRowKeys = append(noCachedChildRowKeys, key)
@@ -491,8 +489,8 @@ func (dbset *{{ $dbsetType }}) include{{ $rel.FieldName }}(ctx context.Context, 
     }
 
     for _, entity := range entities {
-        childRowKey := childRowKeyOf(entity)
-        raw := sc.GetObject(childRowKey)
+        parentRowKey := parentRowKeyOf(entity)
+        raw := sc.GetObject(goen.CardinalityManyToOne, parentRowKey)
         if castover, ok := raw.(*{{ $rel.FieldType }}); ok {
             entity.{{ $rel.FieldName }} = castover
         }

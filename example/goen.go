@@ -505,7 +505,7 @@ func (dbset *BlogDBSet) includePosts(ctx context.Context, later *goen.IncludeBuf
 	noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
 	for _, entity := range entities {
 		key := childRowKeyOf(entity)
-		if sc.HasObject(key) {
+		if sc.HasObject(goen.CardinalityOneToMany, key) {
 			cachedChildRowKeys = append(cachedChildRowKeys, key)
 		} else {
 			noCachedChildRowKeys = append(noCachedChildRowKeys, key)
@@ -552,13 +552,11 @@ func (dbset *BlogDBSet) includePosts(ctx context.Context, later *goen.IncludeBuf
 
 	for _, entity := range entities {
 		childRowKey := childRowKeyOf(entity)
-		raw := sc.GetObject(childRowKey)
+		raw := sc.GetObject(goen.CardinalityOneToMany, childRowKey)
 		if refes, ok := raw.([]interface{}); ok {
 			for _, refe := range refes {
 				entity.Posts = append(entity.Posts, refe.(*Post))
 			}
-		} else if raw != nil {
-			entity.Posts = []*Post{raw.(*Post)}
 		}
 	}
 
@@ -1460,7 +1458,7 @@ func (dbset *PostDBSet) includeBlog(ctx context.Context, later *goen.IncludeBuff
 		return nil
 	}
 
-	childRowKeyOf := func(v *Post) goen.RowKey {
+	parentRowKeyOf := func(v *Post) goen.RowKey {
 		return &goen.MapRowKey{
 			Table: "blogs",
 			Key: map[string]interface{}{
@@ -1473,8 +1471,8 @@ func (dbset *PostDBSet) includeBlog(ctx context.Context, later *goen.IncludeBuff
 	cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
 	noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
 	for _, entity := range entities {
-		key := childRowKeyOf(entity)
-		if sc.HasObject(key) {
+		key := parentRowKeyOf(entity)
+		if sc.HasObject(goen.CardinalityManyToOne, key) {
 			cachedChildRowKeys = append(cachedChildRowKeys, key)
 		} else {
 			noCachedChildRowKeys = append(noCachedChildRowKeys, key)
@@ -1515,8 +1513,8 @@ func (dbset *PostDBSet) includeBlog(ctx context.Context, later *goen.IncludeBuff
 	}
 
 	for _, entity := range entities {
-		childRowKey := childRowKeyOf(entity)
-		raw := sc.GetObject(childRowKey)
+		parentRowKey := parentRowKeyOf(entity)
+		raw := sc.GetObject(goen.CardinalityManyToOne, parentRowKey)
 		if castover, ok := raw.(*Blog); ok {
 			entity.Blog = castover
 		}

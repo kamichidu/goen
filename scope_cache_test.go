@@ -43,10 +43,11 @@ func TestScopeCache(t *testing.T) {
 			"email_id": 2,
 		},
 	}
-	assert.Nil(t, sc.GetObject(userKey), "user's user_id key is not cached yet")
-	assert.Nil(t, sc.GetObject(userEmailKey), "user's email_id key is not cached yet")
-	assert.Equal(t, false, sc.HasObject(userKey), "user's user_id key is not cached yet")
-	assert.Equal(t, false, sc.HasObject(userEmailKey), "user's email_id key is not cached yet")
+	// XXX: one to one relation, currently assume many to one cardinality
+	assert.Nil(t, sc.GetObject(CardinalityNone, userKey), "user's user_id key is not cached yet")
+	assert.Nil(t, sc.GetObject(CardinalityManyToOne, userEmailKey), "user's email_id key is not cached yet")
+	assert.Equal(t, false, sc.HasObject(CardinalityNone, userKey), "user's user_id key is not cached yet")
+	assert.Equal(t, false, sc.HasObject(CardinalityManyToOne, userEmailKey), "user's email_id key is not cached yet")
 	assert.NotPanics(t, func() {
 		sc.RemoveObject(&User{
 			UserID:  1,
@@ -61,18 +62,18 @@ func TestScopeCache(t *testing.T) {
 	}
 	sc.AddObject(user)
 
-	assert.Exactly(t, user, sc.GetObject(userKey), "GetObject returns cached entity by user's user_id key")
-	assert.Exactly(t, []interface{}{user}, sc.GetObject(userEmailKey), "GetObject returns cached entity by user's email_id key")
-	assert.Equal(t, true, sc.HasObject(userKey), "HasObject returns true if cached by user's user_id key")
-	assert.Equal(t, true, sc.HasObject(userEmailKey), "HasObject returns true if cached by user's email_id key")
+	assert.Exactly(t, user, sc.GetObject(CardinalityNone, userKey), "GetObject returns cached entity by user's user_id key")
+	assert.Exactly(t, user, sc.GetObject(CardinalityManyToOne, userEmailKey), "GetObject returns cached entity by user's email_id key")
+	assert.Equal(t, true, sc.HasObject(CardinalityNone, userKey), "HasObject returns true if cached by user's user_id key")
+	assert.Equal(t, true, sc.HasObject(CardinalityManyToOne, userEmailKey), "HasObject returns true if cached by user's email_id key")
 	assert.NotPanics(t, func() {
 		sc.RemoveObject(&User{
 			UserID:  1,
 			EmailID: 2,
 		})
 	})
-	assert.Nil(t, sc.GetObject(userKey), "user's user_id key was deleted")
-	assert.Nil(t, sc.GetObject(userEmailKey), "user's email_id key was deleted")
-	assert.Equal(t, false, sc.HasObject(userKey), "user's user_id key was deleted")
-	assert.Equal(t, false, sc.HasObject(userEmailKey), "user's email_id key was deleted")
+	assert.Nil(t, sc.GetObject(CardinalityNone, userKey), "user's user_id key was deleted")
+	assert.Nil(t, sc.GetObject(CardinalityManyToOne, userEmailKey), "user's email_id key was deleted")
+	assert.Equal(t, false, sc.HasObject(CardinalityNone, userKey), "user's user_id key was deleted")
+	assert.Equal(t, false, sc.HasObject(CardinalityManyToOne, userEmailKey), "user's email_id key was deleted")
 }

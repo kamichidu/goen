@@ -490,7 +490,7 @@ func (dbset *ChildDBSet) includeParent(ctx context.Context, later *goen.IncludeB
 		return nil
 	}
 
-	childRowKeyOf := func(v *Child) goen.RowKey {
+	parentRowKeyOf := func(v *Child) goen.RowKey {
 		return &goen.MapRowKey{
 			Table: "parent",
 			Key: map[string]interface{}{
@@ -504,8 +504,8 @@ func (dbset *ChildDBSet) includeParent(ctx context.Context, later *goen.IncludeB
 	cachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
 	noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
 	for _, entity := range entities {
-		key := childRowKeyOf(entity)
-		if sc.HasObject(key) {
+		key := parentRowKeyOf(entity)
+		if sc.HasObject(goen.CardinalityManyToOne, key) {
 			cachedChildRowKeys = append(cachedChildRowKeys, key)
 		} else {
 			noCachedChildRowKeys = append(noCachedChildRowKeys, key)
@@ -545,8 +545,8 @@ func (dbset *ChildDBSet) includeParent(ctx context.Context, later *goen.IncludeB
 	}
 
 	for _, entity := range entities {
-		childRowKey := childRowKeyOf(entity)
-		raw := sc.GetObject(childRowKey)
+		parentRowKey := parentRowKeyOf(entity)
+		raw := sc.GetObject(goen.CardinalityManyToOne, parentRowKey)
 		if castover, ok := raw.(*Parent); ok {
 			entity.Parent = castover
 		}
@@ -961,7 +961,7 @@ func (dbset *ParentDBSet) includeChildren(ctx context.Context, later *goen.Inclu
 	noCachedChildRowKeys := make([]goen.RowKey, 0, len(entities))
 	for _, entity := range entities {
 		key := childRowKeyOf(entity)
-		if sc.HasObject(key) {
+		if sc.HasObject(goen.CardinalityOneToMany, key) {
 			cachedChildRowKeys = append(cachedChildRowKeys, key)
 		} else {
 			noCachedChildRowKeys = append(noCachedChildRowKeys, key)
@@ -1003,13 +1003,11 @@ func (dbset *ParentDBSet) includeChildren(ctx context.Context, later *goen.Inclu
 
 	for _, entity := range entities {
 		childRowKey := childRowKeyOf(entity)
-		raw := sc.GetObject(childRowKey)
+		raw := sc.GetObject(goen.CardinalityOneToMany, childRowKey)
 		if refes, ok := raw.([]interface{}); ok {
 			for _, refe := range refes {
 				entity.Children = append(entity.Children, refe.(*Child))
 			}
-		} else if raw != nil {
-			entity.Children = []*Child{raw.(*Child)}
 		}
 	}
 

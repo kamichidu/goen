@@ -249,6 +249,16 @@ func TestMetaSchema(t *testing.T) {
 					},
 				},
 			},
+			oneToManyReferenceKeys: nil,
+			manyToOneReferenceKeys: [][]MetaColumn{
+				[]MetaColumn{
+					&metaColumn{
+						field:            mustFieldByName(typ, "IDString"),
+						partOfPrimaryKey: true,
+						columnName:       "id_string",
+					},
+				},
+			},
 		}, meta)
 	})
 }

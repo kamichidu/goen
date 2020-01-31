@@ -25,6 +25,12 @@ type MetaTable interface {
 	// ReferenceKeys gets all reference meta columns by other entities.
 	ReferenceKeys() [][]MetaColumn
 
+	// OneToManyReferenceKeys gets all one to many reference meta columns by other entities.
+	OneToManyReferenceKeys() [][]MetaColumn
+
+	// ManyToOneReferenceKeys gets all many to one reference meta columns by other entities.
+	ManyToOneReferenceKeys() [][]MetaColumn
+
 	// Columns gets all meta columns of this table.
 	Columns() []MetaColumn
 }
@@ -37,6 +43,10 @@ type metaTable struct {
 	primaryKey []MetaColumn
 
 	referenceKeys [][]MetaColumn
+
+	oneToManyReferenceKeys [][]MetaColumn
+
+	manyToOneReferenceKeys [][]MetaColumn
 
 	columns []MetaColumn
 }
@@ -55,6 +65,14 @@ func (m *metaTable) PrimaryKey() []MetaColumn {
 
 func (m *metaTable) ReferenceKeys() [][]MetaColumn {
 	return m.referenceKeys
+}
+
+func (m *metaTable) OneToManyReferenceKeys() [][]MetaColumn {
+	return m.oneToManyReferenceKeys
+}
+
+func (m *metaTable) ManyToOneReferenceKeys() [][]MetaColumn {
+	return m.manyToOneReferenceKeys
 }
 
 func (m *metaTable) Columns() []MetaColumn {
@@ -124,8 +142,14 @@ type MetaSchema interface {
 	// PrimaryKeyOf gets RowKey that represents given entity.
 	PrimaryKeyOf(entity interface{}) RowKey
 
-	// ReferenceKeysOf gets reference RowKey by other entities.
+	// ReferenceKeysOf gets RowKeys that references to entity by other entities.
 	ReferenceKeysOf(entity interface{}) []RowKey
+
+	// OneToManyReferenceKeysOf gets RowKeysone that references to entity by other entities with one to many cardinal.
+	OneToManyReferenceKeysOf(entity interface{}) []RowKey
+
+	// ManyToOneReferenceKeysOf gets RowKeysone that references to entity by other entities with many to one cardinal.
+	ManyToOneReferenceKeysOf(entity interface{}) []RowKey
 
 	// InsertPatchOf gets a patch that represents insert statement.
 	InsertPatchOf(entity interface{}) *Patch
@@ -206,6 +230,46 @@ func (m *metaSchema) ReferenceKeysOf(entity interface{}) []RowKey {
 	rv = reflect.Indirect(rv)
 	var refes []RowKey
 	for _, refeKey := range metaT.ReferenceKeys() {
+		refe := &MapRowKey{}
+		refe.Table = metaT.TableName()
+		refe.Key = map[string]interface{}{}
+		for _, col := range refeKey {
+			rfv := rv.FieldByName(col.Field().Name)
+			refe.Key[col.ColumnName()] = rfv.Interface()
+		}
+		refes = append(refes, refe)
+	}
+	return refes
+}
+
+func (m *metaSchema) OneToManyReferenceKeysOf(entity interface{}) []RowKey {
+	m.Compute()
+
+	metaT := m.LoadOf(entity)
+	rv := reflect.ValueOf(entity)
+	rv = reflect.Indirect(rv)
+	var refes []RowKey
+	for _, refeKey := range metaT.OneToManyReferenceKeys() {
+		refe := &MapRowKey{}
+		refe.Table = metaT.TableName()
+		refe.Key = map[string]interface{}{}
+		for _, col := range refeKey {
+			rfv := rv.FieldByName(col.Field().Name)
+			refe.Key[col.ColumnName()] = rfv.Interface()
+		}
+		refes = append(refes, refe)
+	}
+	return refes
+}
+
+func (m *metaSchema) ManyToOneReferenceKeysOf(entity interface{}) []RowKey {
+	m.Compute()
+
+	metaT := m.LoadOf(entity)
+	rv := reflect.ValueOf(entity)
+	rv = reflect.Indirect(rv)
+	var refes []RowKey
+	for _, refeKey := range metaT.ManyToOneReferenceKeys() {
 		refe := &MapRowKey{}
 		refe.Table = metaT.TableName()
 		refe.Key = map[string]interface{}{}
@@ -358,10 +422,10 @@ func (m *metaSchema) computeOf(typ reflect.Type) MetaTable {
 		refeTyp = elemType(refeTyp)
 		refeStrct := internal.NewStructFromReflect(refeTyp)
 		// expected field types is one of:
-		// - []*RefeTyp
-		// - []RefeTyp
-		// - *RefeTyp
-		// - RefeTyp
+		// - []*Typ
+		// - []Typ
+		// - *Typ
+		// - Typ
 		refeFields := internal.FieldsByFunc(refeStrct.Fields(), func(refeField internal.StructField) bool {
 			if internal.IsIgnoredField(refeField) {
 				return false
@@ -389,6 +453,15 @@ func (m *metaSchema) computeOf(typ reflect.Type) MetaTable {
 					columnName:       internal.ColumnName(foreField),
 					omitEmpty:        internal.OmitEmpty(foreField),
 				})
+			}
+			// now refeTyp == Typ, another entity's field are:
+			// []*Typ or []Typ : refeTyp (1) - typ (*)
+			// *Typ or Typ : refeTyp (*) - typ (1)
+			switch {
+			case internal.IsOneToManyField(refeField):
+				tbl.oneToManyReferenceKeys = append(tbl.oneToManyReferenceKeys, key)
+			case internal.IsManyToOneField(refeField):
+				tbl.manyToOneReferenceKeys = append(tbl.manyToOneReferenceKeys, key)
 			}
 			tbl.referenceKeys = append(tbl.referenceKeys, key)
 		}
