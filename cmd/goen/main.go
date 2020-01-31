@@ -107,7 +107,7 @@ func run(stdin io.Reader, stdout io.Writer, stderr io.Writer, args []string) int
 		flg.Usage()
 		return 128
 	} else if showVersion {
-		fmt.Fprintf(stdout, "%s - %s", filepath.Base(args[0]), version)
+		fmt.Fprintf(stdout, "%s - %s\n", filepath.Base(args[0]), version)
 		return 0
 	} else if flg.NArg() > 1 {
 		flg.Usage()
